@@ -2,7 +2,7 @@
 
 > Patch-based customization layer for the stock Amazon app on rooted LG webOS TVs.
 
-[Screenshot](./Screenshot.png?raw=true)
+![Screenshot](./Screenshot.png?raw=true)
 
 ## Overview
 
