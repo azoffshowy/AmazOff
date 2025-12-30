@@ -13,6 +13,7 @@ generate_wrapper() {
 
   cat > "$WRAP_MAIN" <<EOF
 #!/bin/bash
+mkdir tmp
 exec >tmp/patch_out.log 2>tmp/patch_err.log
 echo "\$(date) \$@"
 

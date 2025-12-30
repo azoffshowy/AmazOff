@@ -50,9 +50,9 @@ toast() {
     "{\"message\":\"$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1
 }
 
-if [ -d "$APP_NAME_A" ]; then
+if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
     TARGET_APP_NAME="$APP_NAME_A"
-elif [ -d "$APP_NAME_B" ]; then
+elif [ -d "$TARGET_BASE_DIR/$APP_NAME_B" ]; then
     TARGET_APP_NAME="$APP_NAME_B"
 else
     die "No target app found"
