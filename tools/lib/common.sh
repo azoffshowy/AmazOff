@@ -1,9 +1,10 @@
 #!/bin/sh
 BASE="/tmp/patcher"
 APP_ID="com.amazoff.patcher"
-TARGET_DIR="/media/cryptofs/apps/usr/palm/applications/"
-APP_NAME_A="/media/cryptofs/apps/usr/palm/applications/amazon"
-APP_NAME_B="/media/cryptofs/apps/usr/palm/applications/lovefilm"
+TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
+TARGET_APP_NAME="amazon"
+APP_NAME_A="amazon"
+APP_NAME_B="lovefilm"
 LOG="$BASE/patcher.log"
 LOCK_DIR="$BASE/patcher.lock"
 TOOLS_DIR="/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools"
@@ -50,9 +51,10 @@ toast() {
 }
 
 if [ -d "$APP_NAME_A" ]; then
-    TARGET_DIR="$APP_NAME_A"
+    TARGET_APP_NAME="$APP_NAME_A"
 elif [ -d "$APP_NAME_B" ]; then
-    TARGET_DIR="$APP_NAME_B"
+    TARGET_APP_NAME="$APP_NAME_B"
 else
     die "No target app found"
 fi
+TARGET_DIR="$TARGET_BASE_DIR/$TARGET_APP_NAME"

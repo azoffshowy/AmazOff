@@ -3,7 +3,6 @@ DIR="$(dirname "$0")"
 . "$DIR/lib/common.sh"
 . "$DIR/lib/netshim.sh"
 . "$DIR/lib/patch.sh"
-. "$DIR/lib/launch.sh"
 
 require_root
 

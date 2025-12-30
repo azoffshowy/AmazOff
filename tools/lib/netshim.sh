@@ -1,6 +1,6 @@
 #!/bin/sh
 
-HOSTS="/mnt/lg/user/var/palm/jail/amazon/etc/hosts"
+HOSTS="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
 HOST_ENTRY="127.0.0.1 cloudfront.xp-assets.aiv-cdn.net"
 HOSTS_BAK="$BASE/hosts.bak"
 
@@ -10,7 +10,13 @@ netshim_pre() {
   log "preparing network for app intercept..."
   [ -x "$NGINX_BIN" ] || die "nginx not executable: $NGINX_BIN"
   [ -f "$NGINX_CONF" ] || die "nginx.conf missing: $NGINX_CONF"
-  [ -f "$HOSTS" ] || die "hosts not found: $HOSTS"
+
+  # ensure parent directory exists
+  HOSTS_DIR=$(dirname "$HOSTS")
+  [ -d "$HOSTS_DIR" ] || mkdir -p "$HOSTS_DIR" || die "cannot create dir: $HOSTS_DIR"
+
+  # ensure hosts file exists
+  [ -f "$HOSTS" ] || : >"$HOSTS" || die "cannot create hosts: $HOSTS"
 
   if ! [ -f "$HOSTS_BAK" ]; then
     cp "$HOSTS" "$HOSTS_BAK" || die "hosts backup failed"
