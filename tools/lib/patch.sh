@@ -13,8 +13,8 @@ generate_wrapper() {
 
   cat > "$WRAP_MAIN" <<EOF
 #!/bin/bash
-exec >temp/patch_out.log 2>temp/patch_err.log
-
+exec >tmp/patch_out.log 2>tmp/patch_err.log
+echo "\$(date) \$@"
 
 toast() {
   luna-send-pub -n 1 luna://com.webos.notification/createToast \

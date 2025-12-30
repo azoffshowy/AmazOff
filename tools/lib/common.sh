@@ -1,8 +1,9 @@
 #!/bin/sh
 BASE="/tmp/patcher"
 APP_ID="com.amazoff.patcher"
-TARGET_ID="amazon"
-TARGET_DIR="/media/cryptofs/apps/usr/palm/applications/amazon"
+TARGET_DIR="/media/cryptofs/apps/usr/palm/applications/"
+APP_NAME_A="/media/cryptofs/apps/usr/palm/applications/amazon"
+APP_NAME_B="/media/cryptofs/apps/usr/palm/applications/lovefilm"
 LOG="$BASE/patcher.log"
 LOCK_DIR="$BASE/patcher.lock"
 TOOLS_DIR="/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools"
@@ -10,7 +11,7 @@ NGINX_BIN="$TOOLS_DIR/nginx/nginx"
 NGINX_CONF="$TOOLS_DIR/nginx/nginx.conf"
 NGINX_PID="$BASE/nginx.pid"
 NGINX_LOG="$BASE/logs/nginx.log"
-TBF="--log-file=temp/amz.log --log-level=ALL:DEBUG"
+TBF="--log-file=tmp/amz.log --log-level=ALL:DEBUG"
 TCF="--disable-ssl-cert"
 
 mkdir -p "$BASE"
@@ -47,3 +48,11 @@ toast() {
   luna-send -n 1 luna://com.webos.notification/createToast \
     "{\"message\":\"$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1
 }
+
+if [ -d "$APP_NAME_A" ]; then
+    TARGET_DIR="$APP_NAME_A"
+elif [ -d "$APP_NAME_B" ]; then
+    TARGET_DIR="$APP_NAME_B"
+else
+    die "No target app found"
+fi
