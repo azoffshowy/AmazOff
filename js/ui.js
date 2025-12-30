@@ -122,28 +122,21 @@
       idx = (i + buttons.length) % buttons.length;
       try { buttons[idx].focus(); } catch (e) {}
     }
-    focusAt(0);
+    setTimeout(function(){ focusAt(0); }, 0);
 
     document.addEventListener('keydown', function (ev) {
       var k = ev.key;
-
-      if (k === 'ArrowLeft') { focusAt(idx - 1); ev.preventDefault(); return; }
-      if (k === 'ArrowRight') { focusAt(idx + 1); ev.preventDefault(); return; }
-
-      if (k === 'Enter') { buttons[idx].click(); ev.preventDefault(); return; }
-
-      // Scroll log with Up/Down
-      if (k === 'ArrowDown' && el.log) { el.log.scrollTop += 140; ev.preventDefault(); return; }
-      if (k === 'ArrowUp' && el.log) { el.log.scrollTop -= 140; ev.preventDefault(); return; }
-
-      // Back closes app (best-effort)
-      if (k === 'Backspace' || k === 'Escape') {
-        if (window.ls2Call) {
-          window.ls2Call('luna://com.webos.applicationManager', 'closeByAppId', { appId: APP_ID }, { timeoutMs: 4000 })
-            .catch(function () {});
-        }
-        ev.preventDefault();
-      }
+      var code = ev.keyCode || ev.which || 0;
+      var isLeft  = (k === 'ArrowLeft'  || k === 'Left'  || code === 37);
+      var isUp    = (k === 'ArrowUp'    || k === 'Up'    || code === 38);
+      var isRight = (k === 'ArrowRight' || k === 'Right' || code === 39);
+      var isDown  = (k === 'ArrowDown'  || k === 'Down'  || code === 40);
+      var isEnter = (k === 'Enter' || k === 'OK' || code === 13);
+      if (isLeft)  { focusAt(idx - 1); ev.preventDefault(); return; }
+      if (isRight) { focusAt(idx + 1); ev.preventDefault(); return; }
+      if (isEnter) { buttons[idx].click(); ev.preventDefault(); return; }
+      if (isDown && el.log) { el.log.scrollTop += 140; ev.preventDefault(); return; }
+      if (isUp   && el.log) { el.log.scrollTop -= 140; ev.preventDefault(); return; }
     });
   })();
   
