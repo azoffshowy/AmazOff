@@ -4,310 +4,66 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=1920, height=1080">
   <title>Patcher</title>
-  <style>
-    :root{
-      --bg0:#0b0c10;
-      --bg1:#10141b;
-      --card:#131a24;
-      --text:#e8edf6;
-      --muted:#a8b3c7;
 
-      --ok:#2dd4bf;
-      --warn:#fbbf24;
-      --err:#fb7185;
-
-      --ring:#ffffff;
-      --shadow: 0 12px 40px rgba(0,0,0,.45);
-      --radius: 18px;
-
-      /* "safe zone" padding for overscan */
-      --safe: 96px;
-    }
-
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1100px 700px at 20% 10%, #162033 0%, var(--bg0) 55%) fixed;
-      color:var(--text);
-      letter-spacing:.2px;
-    }
-
-    .wrap{
-      box-sizing:border-box;
-      padding: var(--safe);
-      height:100%;
-      display:flex;
-      flex-direction:column;
-      gap:18px;
-    }
-
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-    }
-
-    .title h1{
-      margin:0;
-      font-size:60px;
-      font-weight:760;
-      line-height:1.05;
-      display:table;
-      width:100%;
-    }
-    .title .span, .title .text {
-        vertical-align:middle;
-        display:table-cell;
-    }
-
-    .title .sub{
-      margin:8px 0 0 0;
-      font-size:40px;
-      color:var(--muted);
-    }
-
-    .status{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-    }
-
-    .pill{
-      font-size:38px;
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .pill strong{
-      color:var(--text);
-      font-weight:700;
-    }
-
-    .controlsLine{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      color: var(--muted);
-      font-size:38px;
-      white-space:nowrap;
-    }
-    .controlsLine input{
-      width: 22px;
-      height: 22px;
-    }
-
-    .grid{
-      flex:1;
-      min-height:0;
-      display:grid;
-      grid-template-columns: 560px 1fr;
-      gap:18px;
-    }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.08);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      min-height:0;
-    }
-
-    .cardHeader{
-      padding:18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      background: rgba(0,0,0,.18);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-
-    .cardHeader h2{
-      margin:0;
-      font-size:40px;
-      letter-spacing:.3px;
-    }
-
-    .actions{
-      padding:18px;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-
-    .btnRow{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-
-    button{
-      appearance:none;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      border-radius: 16px;
-      padding: 16px 16px;
-      font-size: 40px;
-      font-weight: 650;
-      letter-spacing:.2px;
-      cursor:pointer;
-      box-shadow: 0 10px 26px rgba(0,0,0,.25);
-      transition: transform .10s ease, background .10s ease, border-color .10s ease;
-      min-width: 240px;
-      text-align:left;
-      margin-right:20px;
-    }
-
-    button:hover{
-      background: rgba(255,255,255,.09);
-      border-color: rgba(255,255,255,.18);
-    }
-
-    button:active{
-      transform: scale(.985);
-    }
-
-    button:focus{
-      outline: 5px solid var(--ring);
-      outline-offset: 4px;
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.28);
-    }
-
-    button:disabled{
-      opacity:.55;
-      cursor:default;
-      transform:none;
-    }
-
-    .hintBox{
-      margin-top:6px;
-      padding:14px 16px;
-      border-radius: 16px;
-      background: rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.06);
-      color: var(--muted);
-      font-size: 38px;
-      line-height: 1.35;
-    }
-
-    pre{
-      margin:0;
-      padding:18px;
-      background: linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.28));
-      color: #dbe6ff;
-      font-size: 38px;
-      line-height: 1.35;
-      white-space: pre-wrap;
-      overflow:auto;
-      flex:1;
-      min-height:0;
-    }
-
-    #log{
-      font-size: 30px;
-    }
-
-    /* Toast */
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: 56px;
-      transform: translateX(-50%);
-      padding: 14px 18px;
-      border-radius: 999px;
-      background: rgba(10,14,20,.92);
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: 0 18px 48px rgba(0,0,0,.55);
-      font-size: 40px;
-      letter-spacing:.2px;
-      color: var(--text);
-      z-index: 50;
-      display:none;
-    }
-    .toast[data-kind="ok"]{ border-color: rgba(45,212,191,.35); }
-    .toast[data-kind="err"]{ border-color: rgba(251,113,133,.40); }
-
-    /* Busy overlay (no backdrop-filter for older Chromium) */
-    .spinner{
-      position: fixed;
-      top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,.28);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index: 40;
-    }
-    .spinner .dot{
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--text);
-      margin: 0 8px;
-      opacity:.85;
-      animation: bounce 0.8s infinite ease-in-out;
-    }
-    .spinner .dot:nth-child(2){ animation-delay: .12s; }
-    .spinner .dot:nth-child(3){ animation-delay: .24s; }
-    @keyframes bounce{
-      0%, 80%, 100%{ transform: translateY(0); opacity:.55; }
-      40%{ transform: translateY(-14px); opacity:1; }
-    }
-  </style>
+  <!-- Remove your old inline <style> block entirely -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body data-busy="0">
-  <div class="wrap">
-    <div class="topbar">
-      <div class="title">
-        <h1>
-        <span class="text">Patcher</span>
-        </h1>
+  <div class="app">
+    <div class="safe">
+
+      <div class="topbar">
+        <div class="brand">
+          Patcher
+        </div>
+        <img class="logo" src="./amazoffLarge.png" alt="">
       </div>
 
-      <div class="status" aria-live="polite">
-        <img src="./amazoffLarge.png"/>
+      <div class="main">
+        <div class="col left">
+          <div class="card">
+            <div class="cardTitle">Actions</div>
+
+            <div class="row">
+              <button id="btnPatch" class="btn">Patch</button>
+              <button id="btnUnpatch" class="btn">Unpatch</button>
+              <button id="btnClear" class="btn">Clear log</button>
+            </div>
+
+            <div class="note">
+              Notes:<br>
+              Use the remote to navigate. Focus is highlighted.<br>
+              <br>
+              <b>Patch</b> and <b>Unpach</b> might close this application.<br>
+              Log is persistent, reopen to check success.<br>
+            </div>
+          </div>
+        </div>
+
+        <div class="col right">
+          <div class="card">
+            <div class="cardTitle">Log</div>
+            <pre id="log" class="log" tabindex="0"></pre>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <div class="grid">
-      <section class="card">
-        <div class="cardHeader">
-          <h2>Actions</h2>
-        </div>
-        <div class="actions">
-          <div class="btnRow">
-            <button id="btnPatch">Patch</button>
-            <button id="btnUnpatch">Unpatch</button>
-            <button id="btnClear">Clear log</button>
-          </div>
-          <div class="hintBox">
-            <b>Patch</b> and <b>Unpatch</b> might close the patcher, thats normal. The Log will persist, you can reopen the patcher to check result.
-            <b>Clear log:</b> Clears the log output area.
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="cardHeader">
-          <h2>Log</h2>
-        </div>
-        <pre id="log"></pre>
-      </section>
     </div>
   </div>
 
-  <div id="spinner" class="spinner">
-    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  <!-- JS shows/hides this with el.spinner.style.display = 'flex' / 'none' -->
+  <div id="spinner" class="spinner" aria-hidden="true">
+    <div class="spinnerBox" role="status" aria-live="polite">
+      <div class="dots">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+      <div class="spinnerText">Loading…</div>
+    </div>
   </div>
 
-  <div id="toast" class="toast" data-kind="neutral"></div>
+  <div id="toast" class="toast" data-kind="neutral" aria-hidden="true"></div>
 
+  <script src="js/polyfill.js"></script>
   <script src="js/bridge.js"></script>
   <script src="js/ui.js"></script>
 </body>
