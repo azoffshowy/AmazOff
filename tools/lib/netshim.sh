@@ -28,7 +28,7 @@ netshim_pre() {
   fi
 
   rm -f "$ACCESS_LOG" "$NGINX_PID"
-  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" >>"$NGINX_LOG" 2>&1 || die "nginx start failed"
+  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" -p "$BASE" >>"$NGINX_LOG" 2>&1 || die "nginx start failed"
   log "Proxy started"
 }
 

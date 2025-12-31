@@ -16,8 +16,9 @@ TBF="--log-file=tmp/amz.log --log-level=ALL:DEBUG"
 TCF="--disable-ssl-cert"
 
 mkdir -p "$BASE"
+chmod 777 "$BASE" 2>/dev/null || true
 mkdir -p "$BASE/logs"
-mkdir -p "$BASE/nginx"
+chmod 777 "$BASE/logs" 2>/dev/null || true
 
 log() {
   echo "$*" >> "$LOG"

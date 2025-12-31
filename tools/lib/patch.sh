@@ -10,11 +10,12 @@ TARGET_BIN="bin/ignition $TCF"
 
 generate_wrapper() {
   mkdir -p "$WRAP_DIR" || die "mkdir wrapper failed"
+  mkdir -p "$TARGET_DIR/logs" || die "mkdir logs failed"
+  chmod 777 "$TARGET_DIR/logs" 2>/dev/null || true
 
   cat > "$WRAP_MAIN" <<EOF
 #!/bin/bash
-mkdir tmp
-exec >tmp/patch_out.log 2>tmp/patch_err.log
+exec >logs/patch_out.log 2>logs/patch_err.log
 echo "\$(date) \$@"
 
 toast() {
@@ -84,6 +85,7 @@ do_unpatch() {
   restore_appinfo
   rm -f "$WRAP_MAIN" 2>/dev/null
   rmdir "$WRAP_DIR" 2>/dev/null || true
+  rmdir "$TARGET_DIR/logs" 2>/dev/null || true
   log "removed wrapper"
   log "Successfully unpatched"
 }
