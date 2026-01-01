@@ -34,8 +34,8 @@ case "\$RESP" in
     ;;
   *)
     # failure
-    echo "Failed to load. Check out /tmp/patcher/patcher.log"
-    toast "Failed to load. Check out /tmp/patcher/patcher.log"
+    echo "Failed to trigger. Check out /tmp/patcher/patcher.log"
+    toast "Failed to trigger. Check out /tmp/patcher/patcher.log"
     ;;
 esac
 
