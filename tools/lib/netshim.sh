@@ -35,7 +35,7 @@ netshim_pre() {
 netshim_wait_hit() {
   log "waiting for app to load proxy..."
   i=0
-  while [ $i -lt 15 ]; do
+  while [ $i -lt 20 ]; do
     [ -f "$ACCESS_LOG" ] && grep -q 'ATVUnfPlayerBundle\.js' "$ACCESS_LOG" && return 0
     sleep 1
     i=$((i+1))
@@ -49,6 +49,7 @@ netshim_post() {
     toast "AmazOff loaded!"
   else
     log "app did not query proxy"
+    log "check out nginx access log (/tmp/patcher/logs/access.log)"
     toast "Failed to load AmazOff."
   fi
 

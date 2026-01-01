@@ -12,13 +12,10 @@ NGINX_BIN="$TOOLS_DIR/nginx/nginx"
 NGINX_CONF="$TOOLS_DIR/nginx/nginx.conf"
 NGINX_PID="$BASE/nginx.pid"
 NGINX_LOG="$BASE/logs/nginx.log"
-TBF="--log-file=tmp/amz.log --log-level=ALL:DEBUG"
+TBF="--log-file=logs/amz.log --log-level=ALL:DEBUG"
 TCF="--disable-ssl-cert"
 
-mkdir -p "$BASE"
-chmod 777 "$BASE" 2>/dev/null || true
-mkdir -p "$BASE/logs"
-chmod 777 "$BASE/logs" 2>/dev/null || true
+mkdir -m 777 -p "$BASE/logs"
 
 log() {
   echo "$*" >> "$LOG"

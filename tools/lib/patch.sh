@@ -2,6 +2,7 @@
 
 APPINFO="$TARGET_DIR/appinfo.json"
 APPINFO_BAK="$BASE/appinfo.json.bak"
+WRAP_NAME="prox"
 WRAP_DIR="$TARGET_DIR/bin"
 WRAP_MAIN="$WRAP_DIR/prox"
 WRAP_MAIN_REL="bin/prox"
@@ -10,34 +11,38 @@ TARGET_BIN="bin/ignition $TCF"
 
 generate_wrapper() {
   mkdir -p "$WRAP_DIR" || die "mkdir wrapper failed"
-  mkdir -p "$TARGET_DIR/logs" || die "mkdir logs failed"
-  chmod 777 "$TARGET_DIR/logs" 2>/dev/null || true
+  mkdir -m 777 -p "$TARGET_DIR/logs" || die "mkdir logs failed"
 
   cat > "$WRAP_MAIN" <<EOF
 #!/bin/bash
 exec >logs/patch_out.log 2>logs/patch_err.log
 echo "\$(date) \$@"
 
-toast() {
-  luna-send-pub -n 1 luna://com.webos.notification/createToast \
-    "{\"message\":\"\$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1
+toast() { 
+  luna-send-pub -n 1 luna://com.webos.notification/createToast \ "{\"message\":\"\$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1 
 }
 
-toast "Loading..."
+echo "Loading AmazOff..."
+toast "Loading AmazOff..."
 
 RESP=\$(luna-send-pub -n 1 luna://org.webosbrew.hbchannel.service/exec \
   "{\"command\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools/patchctl.sh trap\"}")
 case "\$RESP" in
   *'"returnValue":true'*)
     # success
+    echo "Triggered AmazOff trap."
     ;;
   *)
     # failure
-    toast "Failed to load. Check out logs."
+    echo "Failed to load. Check out /tmp/patcher/patcher.log"
+    toast "Failed to load. Check out /tmp/patcher/patcher.log"
     ;;
 esac
 
-exec $TARGET_BIN \$*
+TARGET="\${0/$WRAP_NAME/ignition}"
+[ "\$TARGET" = "\$0" ] && TARGET="bin/ignition"
+
+exec \$TARGET $TCF \$@ >logs/amz_out.log 2>logs/amz_err.log
 
 EOF
 
