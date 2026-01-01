@@ -42,7 +42,7 @@ This avoids manual packaging, signing, or SSH interaction.
 4. Launch the Amazon Prime Video App. A Popup-message should appear showing the patch loading state.
 
 Notes:
-- The app may close immediately after a patch or unpatch operation.  
+- The patcher may close immediately after a patch or unpatch operation.  
   This behavior is expected. Log is persistent, you can check the actions outcome by reopening the patcher.
 - A successful patch is confirmed by a **toast notification** when the Amazon app is launched.
 
