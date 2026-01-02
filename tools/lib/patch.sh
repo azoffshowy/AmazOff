@@ -58,9 +58,9 @@ generate_proxy_wrapper() {
 
   cat > "$WRAP_MAIN" <<EOF
 #!/bin/bash
-# AMAZOFF_PATCH_VERSION=$PATCH_VERSION
+# AMAZOFF_PATCH_VERSION=mitm
 exec >logs/patch_out.log 2>logs/patch_err.log
-echo "AmazOff Wrapper $PATCH_VERSION"
+echo "AmazOff Wrapper mitm"
 echo "\$(date): called with \$@"
 
 toast() { 
