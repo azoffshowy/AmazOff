@@ -34,8 +34,12 @@ case "$1" in
     log "starting unpatch routine"
     do_unpatch
     ;;
+  status)
+    : > "$LOG"
+    patch_status_log
+    ;;
   *)
-    echo "usage: patchctl.sh trap|trapWait|patch|unpatch" >> "$LOG"
+    echo "usage: patchctl.sh trap|trapWait|patch|unpatch|status" >> "$LOG"
     exit 1
     ;;
 esac

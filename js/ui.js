@@ -12,6 +12,7 @@
     spinner: document.getElementById('spinner'),
     log: document.getElementById('log'),
     //btnRun: document.getElementById('btnRun'),
+    btnStatus: document.getElementById('btnStatus'),
     btnPatch: document.getElementById('btnPatch'),
     btnUnpatch: document.getElementById('btnUnpatch'),
     btnClear: document.getElementById('btnClear')
@@ -20,7 +21,7 @@
   function setBusy(busy) {
     document.body.setAttribute('data-busy', busy ? '1' : '0');
     if (el.spinner) el.spinner.style.display = busy ? 'flex' : 'none';
-    var buttons = [el.btnPatch, el.btnUnpatch, el.btnClear];
+    var buttons = [el.btnStatus, el.btnPatch, el.btnUnpatch, el.btnClear];
     for (var i = 0; i < buttons.length; i++) {
       if (buttons[i]) buttons[i].disabled = !!busy;
     }
@@ -104,6 +105,7 @@
   // ---- Wiring ----
   //if (el.btnRun) el.btnRun.addEventListener('click', function () { action('runonce'); });
   if (el.btnPatch) el.btnPatch.addEventListener('click', function () { action('patch'); });
+  if (el.btnStatus) el.btnStatus.addEventListener('click', function () { action('status'); });
   if (el.btnUnpatch) el.btnUnpatch.addEventListener('click', function () { action('unpatch'); });
   if (el.btnClear) el.btnClear.addEventListener('click', clearLog);
 
@@ -114,6 +116,7 @@
     if (el.btnPatch) buttons.push(el.btnPatch);
     if (el.btnUnpatch) buttons.push(el.btnUnpatch);
     if (el.btnClear) buttons.push(el.btnClear);
+    if (el.btnStatus) buttons.push(el.btnStatus);
 
     if (!buttons.length) return;
 
