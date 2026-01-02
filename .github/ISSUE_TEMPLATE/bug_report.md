@@ -24,7 +24,7 @@ from /tmp/patcher:
 * patcher.log
 * logs/access.log
 
-from <taget-app-path>/logs:
+from <tagret-app-path>/logs:
 * patch_out.log
 * patch_err.log
 
