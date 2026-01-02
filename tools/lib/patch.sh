@@ -52,6 +52,49 @@ EOF
   log "generated proxy-wrapper for target app"
 }
 
+generate_proxy_wrapper() {
+  mkdir -p "$WRAP_DIR" || die "mkdir wrapper failed"
+  mkdir -m 777 -p "$TARGET_DIR/logs" || die "mkdir logs failed"
+
+  cat > "$WRAP_MAIN" <<EOF
+#!/bin/bash
+# AMAZOFF_PATCH_VERSION=$PATCH_VERSION
+exec >logs/patch_out.log 2>logs/patch_err.log
+echo "AmazOff Wrapper $PATCH_VERSION"
+echo "\$(date): called with \$@"
+
+toast() { 
+  luna-send-pub -n 1 luna://com.webos.notification/createToast \ "{\"message\":\"\$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1 
+}
+
+echo "Loading AmazOff Proxy..."
+toast "Loading AmazOff Proxy..."
+
+RESP=\$(luna-send-pub -n 1 luna://org.webosbrew.hbchannel.service/spawn \
+  "{\"command\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools/mitm/mitm $BASE/logs\"}")
+case "\$RESP" in
+  *'"returnValue":true'*)
+    # success
+    echo "Triggered AmazOff Proxy"
+    ;;
+  *)
+    # failure
+    echo "Failed to trigger. Check out $BASE/logs/mitm.log"
+    toast "Failed to trigger. Check out $BASE/logs/mitm.log"
+    ;;
+esac
+
+TARGET="\${0/$WRAP_NAME/ignition}"
+[ "\$TARGET" = "\$0" ] && TARGET="bin/ignition"
+
+exec \$TARGET $TCF --http-proxy-server=http://127.0.0.1:8998 \$@ >logs/amz_out.log 2>logs/amz_err.log
+
+EOF
+
+  chmod 755 "$WRAP_MAIN" 2>/dev/null || true
+  log "generated proxy-mitm-wrapper for target app"
+}
+
 patch_appinfo_main() {
   if grep -q "\"main\"[[:space:]]*:" "$APPINFO"; then
     sed 's#"main"[[:space:]]*:[[:space:]]*"[^"]*"#"main":"'"$WRAP_MAIN_REL"'"#' "$APPINFO" > "$APPINFO.tmp" || die "sed failed"
@@ -84,6 +127,12 @@ do_patch() {
   generate_wrapper
   patch_appinfo_main
   log "Successfully patched"
+}
+
+do_proxy_patch() {
+  require_root
+  generate_proxy_wrapper
+  log "Successfully proxy-patched"
 }
 
 do_unpatch() {

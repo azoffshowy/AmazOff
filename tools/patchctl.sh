@@ -38,8 +38,12 @@ case "$1" in
     : > "$LOG"
     patch_status_log
     ;;
+  proxy)
+    : > "$LOG"
+    do_proxy_patch
+    ;;
   *)
-    echo "usage: patchctl.sh trap|trapWait|patch|unpatch|status" >> "$LOG"
+    echo "usage: patchctl.sh trap|trapWait|patch|unpatch|status|proxy" >> "$LOG"
     exit 1
     ;;
 esac
