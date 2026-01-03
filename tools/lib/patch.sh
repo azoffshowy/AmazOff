@@ -1,13 +1,14 @@
 #!/bin/sh
-PATCH_VERSION="1.0.0"
+PATCH_VERSION="1.0.1"
 APPINFO="$TARGET_DIR/appinfo.json"
 APPINFO_BAK="$BASE/appinfo.json.bak"
 WRAP_NAME="prox"
 WRAP_DIR="$TARGET_DIR/bin"
+CERT_DIR="$WRAP_DIR/certs"
 WRAP_MAIN="$WRAP_DIR/prox"
 WRAP_MAIN_REL="bin/prox"
-
-TARGET_BIN="bin/ignition $TCF"
+AMZ_LOG="logs/amz_out.log"
+TBF="--log-file=$AMZ_LOG --log-level=ALL:DEBUG"
 
 generate_wrapper() {
   mkdir -p "$WRAP_DIR" || die "mkdir wrapper failed"
@@ -20,31 +21,39 @@ exec >logs/patch_out.log 2>logs/patch_err.log
 echo "AmazOff Wrapper $PATCH_VERSION"
 echo "\$(date): called with \$@"
 
+ARGS="\$*"
+IS_PRELOAD=0
+printf '%s' "\$ARGS" | grep -q '"reason":"preload"' && IS_PRELOAD=1
+
 toast() { 
   luna-send-pub -n 1 luna://com.webos.notification/createToast \ "{\"message\":\"\$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1 
 }
 
-echo "Loading AmazOff..."
-toast "Loading AmazOff..."
+if [ "\$IS_PRELOAD" -eq 0 ]; then
+  echo "Loading AmazOff..."
+  toast "Loading AmazOff..."
 
-RESP=\$(luna-send-pub -n 1 luna://org.webosbrew.hbchannel.service/exec \
-  "{\"command\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools/patchctl.sh trap\"}")
-case "\$RESP" in
-  *'"returnValue":true'*)
-    # success
-    echo "Triggered AmazOff trap."
-    ;;
-  *)
-    # failure
-    echo "Failed to trigger. Check out /tmp/patcher/patcher.log"
-    toast "Failed to trigger. Check out /tmp/patcher/patcher.log"
-    ;;
-esac
+  RESP=\$(luna-send-pub -n 1 luna://org.webosbrew.hbchannel.service/exec \
+    "{\"command\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/tools/patchctl.sh trap\"}")
+  case "\$RESP" in
+    *'"returnValue":true'*)
+      # success
+      echo "Triggered AmazOff trap."
+      ;;
+    *)
+      # failure
+      echo "Failed to trigger. Check out /tmp/patcher/patcher.log"
+      toast "Failed to trigger. Check out /tmp/patcher/patcher.log"
+      ;;
+  esac
+else
+  echo "Preload detected"
+fi
 
 TARGET="\${0/$WRAP_NAME/ignition}"
 [ "\$TARGET" = "\$0" ] && TARGET="bin/ignition"
 
-exec \$TARGET $TCF \$@ >logs/amz_out.log 2>logs/amz_err.log
+exec \$TARGET $TCF $TBF \$@ 2>logs/amz_err.log
 
 EOF
 
@@ -107,6 +116,19 @@ patch_appinfo_main() {
   fi
 }
 
+patch_cert_pin() {
+  if [ -d  $CERT_DIR ]; then
+    if [ ! -f "$CERT_DIR/fe1de658.0" ]; then
+      cp "$TOOLS_DIR/nginx/ca.pem" "$CERT_DIR/fe1de658.0"
+      log "Placed CA cert"
+    else
+      log "CA already in place"
+    fi
+  else
+    log "No cert directory found!"
+  fi
+}
+
 restore_appinfo() {
   [ -f "$APPINFO_BAK" ] || die "no backup at $APPINFO_BAK"
   cp "$APPINFO_BAK" "$APPINFO" || die "restore appinfo failed"
@@ -125,6 +147,7 @@ do_patch() {
     log "backup original appinfo into $APPINFO_BAK"
   fi
   generate_wrapper
+  patch_cert_pin
   patch_appinfo_main
   log "Successfully patched"
 }
@@ -140,8 +163,8 @@ do_unpatch() {
   log "unpatch started: target=$TARGET_DIR"
   restore_appinfo
   rm -f "$WRAP_MAIN" 2>/dev/null
-  rmdir "$WRAP_DIR" 2>/dev/null || true
-  rmdir "$TARGET_DIR/logs" 2>/dev/null || true
+  rm -r -f "$TARGET_DIR/logs" 2>/dev/null || true
+  rm -f "$CERT_DIR/fe1de658.0" 2>/dev/null || true
   log "removed wrapper"
   log "Successfully unpatched"
 }
@@ -171,7 +194,7 @@ patch_status_log() {
     fi
   fi
 
-  log "---- STATUS ----"
+  log "---- STATUS $(date)----"
   log "patcher version: ${patcher_version:-unknown}"
   if [ "$patched" = true ]; then
     log "patched: YES"
@@ -206,8 +229,6 @@ patch_status_log() {
   log "---- Backups ----"
   log "appinfoBak: $BASE/appinfo.json.bak"
   [ -f "$BASE/appinfo.json.bak" ] && log "appinfo backup present"
-  log "hostsBak: $BASE/hosts.bak"
-  [ -f "$BASE/hosts.bak" ] && log "hosts backup present"
 
   cp $LOG $BASE/patcher_state.log
   log "Saved to $BASE/patcher_state.log"

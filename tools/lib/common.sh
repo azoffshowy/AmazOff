@@ -12,7 +12,6 @@ NGINX_BIN="$TOOLS_DIR/nginx/nginx"
 NGINX_CONF="$TOOLS_DIR/nginx/nginx.conf"
 NGINX_PID="$BASE/nginx.pid"
 NGINX_LOG="$BASE/logs/nginx.log"
-TBF="--log-file=logs/amz.log --log-level=ALL:DEBUG"
 TCF="--disable-ssl-cert"
 
 mkdir -m 777 -p "$BASE/logs"

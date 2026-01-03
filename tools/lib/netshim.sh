@@ -1,8 +1,10 @@
 #!/bin/sh
 
-HOSTS="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
+HOSTS_JAIL="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
+HOSTS_JAIL_BAK="$BASE/hosts.jail.bak"
+HOSTS="/etc/hosts"
+HOSTS_BAK="$BASE/hosts.system.bak"
 HOST_ENTRY="127.0.0.1 cloudfront.xp-assets.aiv-cdn.net"
-HOSTS_BAK="$BASE/hosts.bak"
 
 ACCESS_LOG="$BASE/logs/access.log"
 
@@ -11,31 +13,39 @@ netshim_pre() {
   [ -x "$NGINX_BIN" ] || die "nginx not executable: $NGINX_BIN"
   [ -f "$NGINX_CONF" ] || die "nginx.conf missing: $NGINX_CONF"
 
-  # ensure parent directory exists
-  HOSTS_DIR=$(dirname "$HOSTS")
-  [ -d "$HOSTS_DIR" ] || mkdir -p "$HOSTS_DIR" || die "cannot create dir: $HOSTS_DIR"
+  # hosts jail: ensure dir + file exist
+  mkdir -p "$(dirname -- "$HOSTS_JAIL")" || die "cannot create dir: $(dirname -- "$HOSTS_JAIL")"
+  : >"$HOSTS_JAIL" 2>/dev/null || die "cannot create hosts: $HOSTS_JAIL"
 
-  # ensure hosts file exists
-  [ -f "$HOSTS" ] || : >"$HOSTS" || die "cannot create hosts: $HOSTS"
+  backup_overwrite() {
+    # $1=src $2=bak $3=success_log
+    cp -- "$1" "$2" || die "backup failed: $1 -> $2" 
+    log "$3"
+  }
 
-  if ! [ -f "$HOSTS_BAK" ]; then
-    cp "$HOSTS" "$HOSTS_BAK" || die "hosts backup failed"
-    log "Host entry backup success"
-  fi
-  if ! grep -q "$HOST_ENTRY" "$HOSTS"; then
-    echo "$HOST_ENTRY" >> "$HOSTS" || die "hosts append failed"
-    log "Host entry modified"
-  fi
+  ensure_line() {
+    # $1=file $2=line $3=logmsg
+    grep -Fqx -- "$2" "$1" 2>/dev/null || {
+      printf '%s\n' "$2" >>"$1" || { netshim_clean; die "append failed: $1"; }
+      log "$3"
+    }
+  }
 
-  rm -f "$ACCESS_LOG" "$NGINX_PID"
-  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" -p "$BASE" >>"$NGINX_LOG" 2>&1 || die "nginx start failed"
+  backup_overwrite "$HOSTS_JAIL" "$HOSTS_JAIL_BAK" "Jail Host entry backup success"
+  backup_overwrite "$HOSTS"      "$HOSTS_BAK"      "Host entry backup success"
+
+  ensure_line "$HOSTS_JAIL" "$HOST_ENTRY" "Jail Host entry modified"
+  ensure_line "$HOSTS"      "$HOST_ENTRY" "Host entry modified"
+
+  rm -f "$ACCESS_LOG" "$NGINX_PID" "$NGINX_LOG" 2>/dev/null
+  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" -p "$BASE" >>"$NGINX_LOG" 2>&1 || { netshim_clean; die "nginx start failed"; }
   log "Proxy started"
 }
 
 netshim_wait_hit() {
   log "waiting for app to load proxy..."
   i=0
-  while [ $i -lt 20 ]; do
+  while [ $i -lt 30 ]; do
     [ -f "$ACCESS_LOG" ] && grep -q 'ATVUnfPlayerBundle\.js' "$ACCESS_LOG" && return 0
     sleep 1
     i=$((i+1))
@@ -52,14 +62,23 @@ netshim_post() {
     log "check out nginx access log (/tmp/patcher/logs/access.log)"
     toast "Failed to load AmazOff."
   fi
+  netshim_clean
+}
 
+netshim_clean() {
   if [ -f "$NGINX_PID" ]; then
     kill "$(cat "$NGINX_PID")" 2>/dev/null
+    rm -f -- "$NGINX_PID"
     log "Proxy stopped"
   fi
 
   if [ -f "$HOSTS_BAK" ]; then
-    cp "$HOSTS_BAK" "$HOSTS" 2>/dev/null
+    cp -- "$HOSTS_BAK" "$HOSTS" 2>/dev/null
     log "Host entry restored"
+  fi
+
+  if [ -f "$HOSTS_JAIL_BAK" ]; then
+    cp -- "$HOSTS_JAIL_BAK" "$HOSTS_JAIL" 2>/dev/null
+    log "Jail Host entry restored"
   fi
 }
