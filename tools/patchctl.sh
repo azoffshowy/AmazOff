@@ -3,26 +3,23 @@ DIR="$(dirname "$0")"
 . "$DIR/lib/common.sh"
 . "$DIR/lib/netshim.sh"
 . "$DIR/lib/patch.sh"
+. "$DIR/lib/monitor.sh"
 
 require_root
 
 case "$1" in
-  trap)
+  start)
     : > "$LOG"
-    log "Starting app-hook"
-    lock_acquire || die "busy"
-    trap 'lock_release' EXIT
-    netshim_pre
-
-    nohup /bin/sh -c "$TOOLS_DIR/patchctl.sh trapWait" \
-      >>"$LOG" 2>&1 </dev/null &
-
-    exit 0
+    log "starting network inject"
+    do_patch
+    netshim_start_nginx
+    monitor_start
     ;;
-  trapWait)
-    netshim_post
-    lock_release
-    exit 0
+  stop)
+    : > "$LOG"
+    log "stopping network inject"
+    monitor_stop
+    netshim_stop_nginx
     ;;
   patch)
     : > "$LOG"
@@ -36,14 +33,12 @@ case "$1" in
     ;;
   status)
     : > "$LOG"
+    monitor_status_log
+    netshim_status_log
     patch_status_log
     ;;
-  proxy)
-    : > "$LOG"
-    do_proxy_patch
-    ;;
   *)
-    echo "usage: patchctl.sh trap|trapWait|patch|unpatch|status|proxy" >> "$LOG"
+    echo "usage: patchctl.sh start|stop|patch|unpatch|status" >> "$LOG"
     exit 1
     ;;
 esac

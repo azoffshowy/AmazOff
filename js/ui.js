@@ -12,6 +12,8 @@
     spinner: document.getElementById('spinner'),
     log: document.getElementById('log'),
     //btnRun: document.getElementById('btnRun'),
+    btnStart: document.getElementById('btnStart'),
+    btnStop: document.getElementById('btnStop'),
     btnStatus: document.getElementById('btnStatus'),
     btnPatch: document.getElementById('btnPatch'),
     btnUnpatch: document.getElementById('btnUnpatch'),
@@ -21,7 +23,7 @@
   function setBusy(busy) {
     document.body.setAttribute('data-busy', busy ? '1' : '0');
     if (el.spinner) el.spinner.style.display = busy ? 'flex' : 'none';
-    var buttons = [el.btnStatus, el.btnPatch, el.btnUnpatch, el.btnClear];
+    var buttons = [el.btnStart, el.btnStop, el.btnStatus, el.btnPatch, el.btnUnpatch, el.btnClear];
     for (var i = 0; i < buttons.length; i++) {
       if (buttons[i]) buttons[i].disabled = !!busy;
     }
@@ -104,6 +106,8 @@
 
   // ---- Wiring ----
   //if (el.btnRun) el.btnRun.addEventListener('click', function () { action('runonce'); });
+  if (el.btnStart) el.btnStart.addEventListener('click', function () { action('start'); });
+  if (el.btnStop) el.btnStop.addEventListener('click', function () { action('stop'); });
   if (el.btnPatch) el.btnPatch.addEventListener('click', function () { action('patch'); });
   if (el.btnStatus) el.btnStatus.addEventListener('click', function () { action('status'); });
   if (el.btnUnpatch) el.btnUnpatch.addEventListener('click', function () { action('unpatch'); });
@@ -113,6 +117,8 @@
   (function setupRemoteNav() {
     var buttons = [];
     //if (el.btnRun) buttons.push(el.btnRun);
+    if (el.btnStart) buttons.push(el.btnStart);
+    if (el.btnStop) buttons.push(el.btnStop);
     if (el.btnPatch) buttons.push(el.btnPatch);
     if (el.btnUnpatch) buttons.push(el.btnUnpatch);
     if (el.btnClear) buttons.push(el.btnClear);
