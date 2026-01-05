@@ -1,0 +1,6 @@
+{
+    "log-level": "ALL:DEBUG",
+    "log-file": "logs/amz_debug.log",
+    "http-proxy-server": "http://127.0.0.1:8998",
+    "disable-ssl-cert": "1"
+}

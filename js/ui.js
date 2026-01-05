@@ -15,15 +15,16 @@
     btnStart: document.getElementById('btnStart'),
     btnStop: document.getElementById('btnStop'),
     btnStatus: document.getElementById('btnStatus'),
-    btnPatch: document.getElementById('btnPatch'),
-    btnUnpatch: document.getElementById('btnUnpatch'),
-    btnClear: document.getElementById('btnClear')
+    //btnPatch: document.getElementById('btnPatch'),
+    //btnUnpatch: document.getElementById('btnUnpatch'),
+    btnClear: document.getElementById('btnClear'),
+    btnDebug: document.getElementById('btnDebug')
   };
 
   function setBusy(busy) {
     document.body.setAttribute('data-busy', busy ? '1' : '0');
     if (el.spinner) el.spinner.style.display = busy ? 'flex' : 'none';
-    var buttons = [el.btnStart, el.btnStop, el.btnStatus, el.btnPatch, el.btnUnpatch, el.btnClear];
+    var buttons = [el.btnStart, el.btnStop, el.btnStatus, el.btnClear, el.btnDebug];
     for (var i = 0; i < buttons.length; i++) {
       if (buttons[i]) buttons[i].disabled = !!busy;
     }
@@ -31,6 +32,7 @@
 
   var toastTimer = null;
   function showToast(text, kind, ms) {
+    return;
     if (!el.toast) return;
     if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
     el.toast.textContent = text || '';
@@ -49,6 +51,20 @@
   }
 
   // ---- Exec helper (HBChannel) ----
+  function hbExecCb(command, onOk, onErr) {
+    console.log("Running HBExec with: "+command);
+    if (!window.webOS || !webOS.service || !webOS.service.request) {
+      if (onErr) onErr({ errorText: 'webOS.service.request not available' });
+      return;
+    }
+    webOS.service.request('luna://org.webosbrew.hbchannel.service', {
+      method: 'exec',
+      parameters: { command: command },
+      onSuccess: onOk,
+      onFailure: onErr
+    });
+  }
+
   function hbExec(command, timeoutMs) {
     if (!window.ls2Call) return Promise.reject(new Error('ls2Call not available'));
     return window.ls2Call(
@@ -61,7 +77,7 @@
 
   function readLog() {
     var cmd = "/bin/sh -c 'test -f \"" + LOG_PATH + "\" && tail -n 400 \"" + LOG_PATH + "\" || true'";
-    return hbExec(cmd, 20000).then(function (res) {
+    hbExecCb(cmd,function (res) {
       var out = '';
       var err = '';
       if (res && typeof res === 'object') {
@@ -71,30 +87,32 @@
       var merged = (String(out || '') + (err ? '\n' + String(err) : '')).replace(/\s+$/g, '');
       if (merged) setLogText(merged);
       console.log("call returned: ",res);
-    }).catch(function (e) {
-      setLogText(String(e && e.message ? e.message : e));
-    }).then(function () {
       setBusy(false);
-    });
+    },function (e) {
+      console.log("call failed: ",e);
+      //setLogText(String(e && e.message ? e.message : e));
+      console.log("Call failed. Please try again.")
+      setBusy(false);
+    })
   }
 
   function action(kind) {
     setBusy(true);
     showToast(String(kind || '').toUpperCase(), 'neutral', 900);
+    console.log("Running action with: "+kind);
 
-    return hbExec(PATCHCTL + ' ' + kind, 30000).then(function () {
-      return readLog();
-    }).then(function () {
+    hbExecCb(PATCHCTL + ' ' + kind,function () {
+      console.log("Returned hbexec kind");
+      readLog();
       showToast('Done', 'ok', 1400);
-    }).catch(function (e) {
+    },function (e) {
       // Try to refresh log even on failure
-      return readLog().catch(function () {}).then(function () {
-        showToast('Failed', 'err', 2200);
-        var msg = String(e && e.message ? e.message : e);
-        var current = el.log ? (el.log.textContent || '') : '';
-        setLogText((msg + '\n\n' + current).replace(/\s+$/g, ''));
-      });
-    }).then(function () {
+      console.log("Returned hbexec kind failed");
+      console.log(e);
+      //readLog();
+      showToast('Failed', 'err', 2200);
+      //var current = el.log ? (el.log.textContent || '') : '';
+      setLogText("Call failed, try again");
       setBusy(false);
     });
   }
@@ -108,9 +126,10 @@
   //if (el.btnRun) el.btnRun.addEventListener('click', function () { action('runonce'); });
   if (el.btnStart) el.btnStart.addEventListener('click', function () { action('start'); });
   if (el.btnStop) el.btnStop.addEventListener('click', function () { action('stop'); });
-  if (el.btnPatch) el.btnPatch.addEventListener('click', function () { action('patch'); });
+  //if (el.btnPatch) el.btnPatch.addEventListener('click', function () { action('patch'); });
   if (el.btnStatus) el.btnStatus.addEventListener('click', function () { action('status'); });
-  if (el.btnUnpatch) el.btnUnpatch.addEventListener('click', function () { action('unpatch'); });
+  //if (el.btnUnpatch) el.btnUnpatch.addEventListener('click', function () { action('unpatch'); });
+  if (el.btnDebug) el.btnDebug.addEventListener('click', function () { action('debug'); });
   if (el.btnClear) el.btnClear.addEventListener('click', clearLog);
 
   // ---- Remote navigation ----
@@ -119,10 +138,11 @@
     //if (el.btnRun) buttons.push(el.btnRun);
     if (el.btnStart) buttons.push(el.btnStart);
     if (el.btnStop) buttons.push(el.btnStop);
-    if (el.btnPatch) buttons.push(el.btnPatch);
-    if (el.btnUnpatch) buttons.push(el.btnUnpatch);
-    if (el.btnClear) buttons.push(el.btnClear);
+    //if (el.btnPatch) buttons.push(el.btnPatch);
+    //if (el.btnUnpatch) buttons.push(el.btnUnpatch);
     if (el.btnStatus) buttons.push(el.btnStatus);
+    if (el.btnClear) buttons.push(el.btnClear);
+    if (el.btnDebug) buttons.push(el.btnDebug);
 
     if (!buttons.length) return;
 

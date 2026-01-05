@@ -14,12 +14,26 @@ case "$1" in
     do_patch
     netshim_start_nginx
     monitor_start
+    log "Start successful"
     ;;
   stop)
     : > "$LOG"
     log "stopping network inject"
     monitor_stop
     netshim_stop_nginx
+    netshim_stop_mitm
+    log "Stop successful"
+    ;;
+  debug)
+    : > "$LOG"
+    log "starting debug setup"
+    do_patch
+    patch_debug_conf
+    patch_debug_certs
+    netshim_start_nginx
+    netshim_start_mitm
+    monitor_start
+    log "Debug start successful"
     ;;
   patch)
     : > "$LOG"
@@ -38,7 +52,7 @@ case "$1" in
     patch_status_log
     ;;
   *)
-    echo "usage: patchctl.sh start|stop|patch|unpatch|status" >> "$LOG"
+    echo "usage: patchctl.sh start|stop|debug|patch|unpatch|status" >> "$LOG"
     exit 1
     ;;
 esac

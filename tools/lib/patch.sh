@@ -1,9 +1,11 @@
 #!/bin/sh
 CERT_DIR="$TARGET_DIR/bin/certs"
+CERT_DIR_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.framework.network/static/0.6.5/certs/ca-certs"
 CERT_NAME="fe1de658.0"
 HOSTS_JAIL="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
 HOSTS_SYSTEM="/etc/hosts"
 HOST_ENTRY="127.0.0.1 cloudfront.xp-assets.aiv-cdn.net"
+HOST_ENTRY_V6="::1 cloudfront.xp-assets.aiv-cdn.net"
 
 patch_cert_pin() {
   if [ -d  $CERT_DIR ]; then
@@ -14,15 +16,34 @@ patch_cert_pin() {
     else
       log "CA already in place"
     fi
+  elif [ -d  $CERT_DIR_LOVEFILM ]; then
+    if [ ! -f "$CERT_DIR_LOVEFILM/$CERT_NAME" ]; then
+      cp "$ASSETS_DIR/$CERT_NAME" "$CERT_DIR_LOVEFILM/$CERT_NAME"
+      chmod 755 "$CERT_DIR_LOVEFILM/$CERT_NAME" 2>/dev/null || true
+      log "Placed CA cert for lovefilm"
+    else
+      log "CA already in place"
+    fi
   else
     log "No cert directory found!"
   fi
 }
 
 patch_default_conf(){
-  [ -f "$TARGET_DIR/default_config.json" ] || die "missing default config $TARGET_DIR/default_config.json"
-  [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak"
+  [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak" 2>/dev/null
   cat "$ASSETS_DIR/default_config.json" > "$TARGET_DIR/default_config.json"
+}
+
+patch_debug_conf(){
+  [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak" 2>/dev/null
+  cat "$ASSETS_DIR/default_config_debug.json" > "$TARGET_DIR/default_config.json"
+  log "Patched Debug config"
+  mkdir -m 777 -p "$TARGET_DIR/logs" 2>/dev/null || true
+}
+
+patch_debug_certs(){
+  cp -r "$TOOLS_DIR/mitm/certcache" "$LOGS_BASE_DIR" 2>/dev/null || true
+  log "Preload certs"
 }
 
 patch_hosts(){
@@ -50,6 +71,11 @@ patch_hosts_helper() {
     $0 == line { found=1 }
     END { exit (found ? 0 : 1) }
   ' "$f" || printf '\n%s\n' "$HOST_ENTRY" >>"$f"
+
+  awk -v line="$HOST_ENTRY_V6" '
+    $0 == line { found=1 }
+    END { exit (found ? 0 : 1) }
+  ' "$f" || printf '\n%s\n' "$HOST_ENTRY_V6" >>"$f"
 }
 
 unpatch_hosts_helper() {
@@ -58,6 +84,7 @@ unpatch_hosts_helper() {
 
   tmp="/tmp/hosts.tmp.$$"
   awk -v line="$HOST_ENTRY" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
+  awk -v line="$HOST_ENTRY_V6" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
   cat "$tmp" > "$f" || { rm -f "$tmp"; die "replace failed: $f"; }
 }
 
@@ -78,7 +105,7 @@ do_unpatch() {
   unpatch_hosts
   if [ -f "$TARGET_DIR/default_config.json.bak" ]; then
     cat "$TARGET_DIR/default_config.json.bak" > "$TARGET_DIR/default_config.json"
-    rm -r -f "$TARGET_DIR/default_config.json.bak" 2>/dev/null || true
+    rm -f "$TARGET_DIR/default_config.json.bak" 2>/dev/null || true
     log "restored default_config"
   fi
   log "Successfully unpatched"

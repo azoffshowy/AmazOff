@@ -1,20 +1,25 @@
 #!/bin/sh
 BASE="/tmp/patcher"
 APP_ID="com.amazoff.patcher"
-TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
 TARGET_APP_NAME="amazon"
 APP_NAME_A="amazon"
 APP_NAME_B="lovefilm"
+TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
+PATCHER_BASE_DIR="/media/developer/apps/usr/palm/applications/$APP_ID"
+LOGS_BASE_DIR="$BASE/logs"
 LOG="$BASE/patcher.log"
 LOG_MON="$BASE/monitor.log"
-ASSETS_DIR="/media/developer/apps/usr/palm/applications/$APP_ID/assets"
-TOOLS_DIR="/media/developer/apps/usr/palm/applications/$APP_ID/tools"
+ASSETS_DIR="$PATCHER_BASE_DIR/assets"
+TOOLS_DIR="$PATCHER_BASE_DIR/tools"
 SCRIPTS_DIR="$TOOLS_DIR/lib"
 NGINX_BIN="$TOOLS_DIR/nginx/nginx"
 NGINX_CONF="$TOOLS_DIR/nginx/nginx.conf"
 NGINX_PID="$BASE/nginx.pid"
-NGINX_LOG="$BASE/logs/nginx.log"
-NGINX_ACCESS_LOG="$BASE/logs/access.log"
+NGINX_LOG="$LOGS_BASE_DIR/nginx.log"
+NGINX_ACCESS_LOG="$LOGS_BASE_DIR/access.log"
+MITM_BIN="$TOOLS_DIR/mitm/mitm"
+MITM_PID="$LOGS_BASE_DIR/mitm.pid"
+MITM_LOG="$LOGS_BASE_DIR/mitm.log"
 
 if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
     TARGET_APP_NAME="$APP_NAME_A"
@@ -43,6 +48,6 @@ require_root() {
 }
 
 toast() {
-  luna-send -n 1 luna://com.webos.notification/createToast \
-    "{\"message\":\"$1\", \"iconUrl\":\"/media/developer/apps/usr/palm/applications/com.amazoff.patcher/amazoff.png\", \"sourceId\":\"com.amazoff.patcher\"}" >/dev/null 2>&1
+  luna-send -n 1 -a $APP_ID luna://com.webos.notification/createToast \
+    "{\"message\":\"$1\", \"iconUrl\":\"$PATCHER_BASE_DIR/amazoff.png\", \"sourceId\":\"$APP_ID\"}" >/dev/null 2>&1
 }
