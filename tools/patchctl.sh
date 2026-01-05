@@ -51,6 +51,14 @@ case "$1" in
     netshim_status_log
     patch_status_log
     ;;
+  autostart_toggle)
+    : > "$LOG"
+    if [ -f "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" ]; then
+      rm -rf "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" 2>&1 >> $LOG && log "Removed Autostart"
+    else
+      mkdir -p /var/lib/webosbrew/init.d && ln -sf $AUTOSTART_SCRIPT /var/lib/webosbrew/init.d/$AUTOSTART_ENTRY 2>&1 >> $LOG && log "Set Autostart"
+    fi
+    ;;
   *)
     echo "usage: patchctl.sh start|stop|debug|patch|unpatch|status" >> "$LOG"
     exit 1
