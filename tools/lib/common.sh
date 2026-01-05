@@ -22,11 +22,13 @@ MITM_PID="$LOGS_BASE_DIR/mitm.pid"
 MITM_LOG="$LOGS_BASE_DIR/mitm.log"
 AUTOSTART_ENTRY="50-custom-amazoff"
 AUTOSTART_SCRIPT="$TOOLS_DIR/autostart.sh"
+TOASTFIX=""
 
 if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
     TARGET_APP_NAME="$APP_NAME_A"
 elif [ -d "$TARGET_BASE_DIR/$APP_NAME_B" ]; then
     TARGET_APP_NAME="$APP_NAME_B"
+    TOASTFIX="-a \"$APP_ID\""
 else
     die "No target app found"
 fi
@@ -50,6 +52,6 @@ require_root() {
 }
 
 toast() {
-  luna-send -n 1 -a "$APP_ID" luna://com.webos.notification/createToast \
+  luna-send -n 1 $TOASTFIX luna://com.webos.notification/createToast \
     "{\"message\":\"$1\", \"iconUrl\":\"$PATCHER_BASE_DIR/amazoff.png\", \"sourceId\":\"$APP_ID\"}" >/dev/null 2>&1
 }
