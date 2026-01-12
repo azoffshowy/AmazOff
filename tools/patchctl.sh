@@ -9,12 +9,22 @@ require_root
 
 SERVICESTATE="unknown"
 setServiceState(){
-  if monitor_running && netshim_running; then
-    SERVICESTATE="running"
-  elif [ "${1:-}" = "start" ]; then
-    SERVICESTATE="error"
+  if [ "$TARGET_APP_NAME" = "$APP_NAME_LOVEFILM" ]; then
+    if is_lovefilm_patched; then
+      SERVICESTATE="running"
+    elif [ "${1:-}" = "start" ]; then
+      SERVICESTATE="error"
+    else
+      SERVICESTATE="stopped"
+    fi
   else
-    SERVICESTATE="stopped"
+    if monitor_running && netshim_running; then
+      SERVICESTATE="running"
+    elif [ "${1:-}" = "start" ]; then
+      SERVICESTATE="error"
+    else
+      SERVICESTATE="stopped"
+    fi
   fi
 }
 
@@ -34,26 +44,35 @@ printState(){
 case "$1" in
   start)
     : > "$LOG"
-    log "starting network inject"
-    do_patch
-    netshim_start_nginx
-    monitor_start
-    if monitor_running && netshim_running; then
-      log "Start successful"
+    if [ "$TARGET_APP_NAME" = "$APP_NAME_LOVEFILM" ]; then
+      do_patch_lovefilm
     else
-      log "Start failed"
+      log "starting network inject"
+      do_patch
+      netshim_start_nginx
+      monitor_start
+      if monitor_running && netshim_running; then
+        log "Start successful"
+      else
+        log "Start failed"
+      fi
     fi
     ;;
   stop)
     : > "$LOG"
-    log "stopping network inject"
-    monitor_stop
-    netshim_stop_nginx
-    netshim_stop_mitm
-    log "Stop successful"
+    if [ "$TARGET_APP_NAME" = "$APP_NAME_LOVEFILM" ]; then
+      do_unpatch_lovefilm
+    else
+      log "stopping network inject"
+      monitor_stop
+      netshim_stop_nginx
+      netshim_stop_mitm
+      log "Stop successful"
+    fi
     ;;
   debug)
     : > "$LOG"
+    #broken on lovefilm
     log "starting debug setup"
     do_patch
     patch_debug_conf
@@ -65,11 +84,13 @@ case "$1" in
     ;;
   patch)
     : > "$LOG"
+    #broken on lovefilm
     log "starting patch routine"
     do_patch
     ;;
   unpatch)
     : > "$LOG"
+    #broken on lovefilm
     log "starting unpatch routine"
     do_unpatch
     ;;
@@ -97,9 +118,13 @@ setServiceState "${1:-}"
 setAutostartState
 printState
 if [ "$SERVICESTATE" = "error" ];then
-  #recover partial start
-  monitor_stop
-  netshim_stop_nginx
-  netshim_stop_mitm
+  if [ "$TARGET_APP_NAME" = "$APP_NAME_LOVEFILM" ]; then
+    do_unpatch_lovefilm
+  else
+    #recover partial start
+    monitor_stop
+    netshim_stop_nginx
+    netshim_stop_mitm
+  fi
 fi
 exit 0

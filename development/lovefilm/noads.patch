@@ -1,0 +1,26 @@
+--- AppStartChunk.orig.js	2026-01-12 17:23:57.748786239 -0500
++++ AppStartChunk.orig_patched.js	2026-01-12 17:24:33.984610805 -0500
+@@ -1,5 +1,6 @@
++var _HOMEBREW_NO_AD_IN_RESPONSE = !0;
+ (globalThis.webpackChunkPhoton = globalThis.webpackChunkPhoton || []).push([
+     [384], {
+         6331: function(e, t, n) {
+             "use strict";
+             n.r(t), n.d(t, {
+@@ -4416,10 +4417,16 @@
+                                     try {
+                                         if (a = JSON.parse(o), !Ke()(a.error)) {
+                                             var s = lt.createError(a.error);
+                                             return void(He()(e.RETRIABLE_PRS_ERRORS, a.error.type) ? r(s) : i(s))
+                                         }
++                                        if(_HOMEBREW_NO_AD_IN_RESPONSE && a && a.cuepointPlaylist)
++                                        {
++                                            delete a.cuepointPlaylist.cuepointFulfillmentMetadata
++                                            delete a.cuepointPlaylist.encodedManifest
++                                            delete a.cuepointPlaylist.format
++                                        }
+                                         a.errorsByResource = lt.convertResourceExceptions(a.errorsByResource), a.returnedTitleRendition = lt
+                                             .convertRightsException(a.returnedTitleRendition)
+                                     } catch (e) {
+                                         return void r(lt.createPRSError("", e))
+                                     }

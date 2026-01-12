@@ -21,22 +21,21 @@ die() {
 
 APP_ID="com.amazoff.patcher"
 TARGET_APP_NAME="amazon"
-APP_NAME_A="amazon"
-APP_NAME_B="lovefilm"
+APP_NAME_AMAZON="amazon"
+APP_NAME_LOVEFILM="lovefilm"
 TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
 TOASTFIX=""
 
-if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
-    TARGET_APP_NAME="$APP_NAME_A"
-elif [ -d "$TARGET_BASE_DIR/$APP_NAME_B" ]; then
-    TARGET_APP_NAME="$APP_NAME_B"
+if [ -d "$TARGET_BASE_DIR/$APP_NAME_AMAZON" ]; then
+    TARGET_APP_NAME="$APP_NAME_AMAZON"
+elif [ -d "$TARGET_BASE_DIR/$APP_NAME_LOVEFILM" ]; then
+    TARGET_APP_NAME="$APP_NAME_LOVEFILM"
     TOASTFIX="-a \"$APP_ID\""
 else
     die "No target app found"
 fi
+
 TARGET_DIR="$TARGET_BASE_DIR/$TARGET_APP_NAME"
-
-
 PATCHER_BASE_DIR="/media/developer/apps/usr/palm/applications/$APP_ID"
 PATCHER_RESOURCES_DIR="$PATCHER_BASE_DIR/resources/$TARGET_APP_NAME"
 LOG_MON="$LOGS_BASE_DIR/monitor.log"

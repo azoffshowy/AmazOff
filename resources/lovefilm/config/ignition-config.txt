@@ -1,0 +1,4 @@
+--plugin=com.amazon.ignition.app.stark
+--loglevel=debug
+--log-dir=/media/cryptofs/apps/usr/palm/applications/lovefilm/logs
+--no-script-signature-validation

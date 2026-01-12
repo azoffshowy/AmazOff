@@ -1,6 +1,8 @@
 #!/bin/sh
 TARGET_CERT_DIR="$TARGET_DIR/bin/certs"
 TARGET_CERT_DIR_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.framework.network/static/0.6.5/certs/ca-certs"
+TARGET_CONF_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.framework.core/static/0.22.11/ignition-config.txt"
+TARGET_CHUNK_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.app.stark/var/chunks-cache/chunk-0.js"
 CERT_NAME="fe1de658.0"
 HOSTS_JAIL="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
 HOSTS_SYSTEM="/etc/hosts"
@@ -27,6 +29,16 @@ patch_cert_pin() {
   else
     die "No cert directory found!"
   fi
+}
+
+patch_lovefilm_conf(){
+  [ -f "$TARGET_CONF_LOVEFILM.bak" ] || cp "$TARGET_CONF_LOVEFILM" "$TARGET_CONF_LOVEFILM.bak" 2>/dev/null
+  cat "$CONFIGS_DIR/ignition-config.txt" > "$TARGET_CONF_LOVEFILM"
+}
+
+patch_lovefilm_chunk(){
+  [ -f "$TARGET_CHUNK_LOVEFILM.bak" ] || cp "$TARGET_CHUNK_LOVEFILM" "$TARGET_CHUNK_LOVEFILM.bak" 2>/dev/null
+  cat "$PATCHER_RESOURCES_DIR/patch/chunk-0.js" > "$TARGET_CHUNK_LOVEFILM"
 }
 
 patch_default_conf(){
@@ -97,6 +109,43 @@ do_patch() {
   log "Successfully patched"
 }
 
+do_patch_lovefilm() {
+  require_root
+  log "patching target=$TARGET_DIR"
+  patch_cert_pin
+  patch_lovefilm_conf
+  patch_lovefilm_chunk
+  log "Successfully patched"
+}
+
+do_unpatch_lovefilm() {
+  require_root
+  log "unpatch started: target=$TARGET_DIR"
+  rm -f "$CERT_DIR/fe1de658.0" 2>/dev/null || true
+  log "removed Cert pinning"
+
+  rm -f "$TARGET_CONF_LOVEFILM" 2>/dev/null || true
+  if [ -f "$TARGET_CONF_LOVEFILM.bak" ]; then
+    cat "$TARGET_CONF_LOVEFILM.bak" > "$TARGET_CONF_LOVEFILM"
+    rm -f "$TARGET_CONF_LOVEFILM.bak" 2>/dev/null || true
+    log "restored default_config"
+  fi
+
+  rm -f "$TARGET_CHUNK_LOVEFILM" 2>/dev/null || true
+  if [ -f "$TARGET_CHUNK_LOVEFILM.bak" ]; then
+    cat "$TARGET_CHUNK_LOVEFILM.bak" > "$TARGET_CHUNK_LOVEFILM"
+    rm -f "$TARGET_CHUNK_LOVEFILM.bak" 2>/dev/null || true
+    log "restored js resource"
+  else
+    log "removed js patch"
+  fi
+  log "Successfully unpatched"
+}
+
+is_lovefilm_patched() {
+  cmp -s "$TARGET_CHUNK_LOVEFILM" "$PATCHER_RESOURCES_DIR/patch/chunk-0.js"
+}
+
 do_unpatch() {
   require_root
   log "unpatch started: target=$TARGET_DIR"
@@ -122,9 +171,6 @@ patch_status_log() {
   else
     log "CA not found"
   fi
-  log "--------"
-  log "default_config:
-$(cat $TARGET_DIR/default_config.json)"
   log "--------"
   log "$HOSTS_SYSTEM:
 $(cat $HOSTS_SYSTEM)"
