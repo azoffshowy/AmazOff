@@ -17,8 +17,8 @@ AmazOff requires **[Homebrew Channel](https://www.webosbrew.org/)** to be presen
 ## Status
 
 - **Development stage:** early / experimental  
-- **Tested on:** webOS 4.x, webOS 6.5
-- **Amazon app variants:** 4.1.15, 6.3.38
+- **Tested on:** webOS 4.x, webOS 6.5, webOS 9.x
+- **Amazon app variants:** 4.1.15, 6.3.38, 1.1.121
 
 ## Requirements
 
@@ -48,5 +48,5 @@ Notes:
 
 ## Development Notes
 
-The most convenient way to see the modifications is to js-beautify the nginx-delivered .js file and diff with the original source. 
+Within the folder **development** you can find the applied patches to the player resources. It also contains a setup script for development as well as a script how the dev-version was then packed. 
 
