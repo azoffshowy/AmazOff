@@ -32,15 +32,13 @@ monitor_start() {
 
   log "starting monitor daemon"
 
-  # Re-source the same environment in the new shell, then call monitor_loop.
-  # $DIR must exist in this scope (like in your patchctl.sh).
-  if command -v setsid >/dev/null 2>&1; then
-    setsid /bin/sh -c ". \"$SCRIPTS_DIR/common.sh\"; . \"$SCRIPTS_DIR/monitor.sh\"; monitor_loop" \
-      >>"$LOG_MON" 2>&1 </dev/null &
-  else
-    nohup /bin/sh -c ". \"$SCRIPTS_DIR/common.sh\"; . \"$SCRIPTS_DIR/monitor.sh\"; monitor_loop" \
-      >>"$LOG_MON" 2>&1 </dev/null &
-  fi
+  : > "$LOG_MON"
+
+  daemonize "$LOG_MON" sh -c '
+    . "'"$SCRIPTS_DIR/common.sh"'"
+    . "'"$SCRIPTS_DIR/monitor.sh"'"
+    monitor_loop
+  '
 
   # Wait briefly for pidfile creation
   i=0
@@ -50,7 +48,7 @@ monitor_start() {
   done
 
   p="$(read_pidfile "$MON_PID" || true)"
-  pid_alive "$p" && log "monitor started pid=$p" || log "monitor start failed"
+  pid_alive "$p" && log "monitor started pid=$p" || log "Monitor start FAILED"
 }
 
 monitor_stop() {
@@ -71,5 +69,15 @@ monitor_status_log() {
     log "monitor: running pid=$p"
   else
     log "monitor: not running"
+  fi
+}
+
+
+monitor_running(){
+  p="$(read_pidfile "$MON_PID" || true)"
+  if pid_alive "$p"; then
+    return 0
+  else
+    return 1;
   fi
 }

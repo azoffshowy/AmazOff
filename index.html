@@ -1,75 +1,86 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=1920, height=1080">
-  <title>Patcher</title>
-
-  <!-- Remove your old inline <style> block entirely -->
+  <meta name="viewport" content="width=1920,height=1080,initial-scale=1">
+  <title>AmazOff</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
+<body>
 
-<body data-busy="0">
-  <div class="app">
-    <div class="safe">
+<div id="safe" class="safe">
+  <div class="layout">
+    <div class="rail">
+      <button id="svcBtn" class="navbtn item" tabindex="0" type="button">Stop Service</button>
+      <button id="launchBtn" class="navbtn item" tabindex="0" type="button">Launch Target App</button>
+      <button id="detailsBtn" class="navbtn item" tabindex="0" type="button">Details</button>
+    </div>
 
-      <div class="topbar">
+    <div class="content">
+      <div class="card">
         <div class="brand">
-          Patcher
+          <img src="assets/amazoff_title.png" alt="">
         </div>
-        <img class="logo" src="./amazoffLarge.png" alt="">
-      </div>
+        <hr>
+        <div class="line">
+          <div class="k">Background Service / Patch</div>
+          <div class="v"><span id="pill" class="pill running">RUNNING</span></div>
+        </div>
 
-      <div class="main">
-        <div class="col left">
-          <div class="card">
-            <div class="cardTitle">Actions</div>
-
-            <div class="row">
-              <button id="btnStart" class="btn">Start</button>
-              <button id="btnStop" class="btn">Stop</button>
-              <button id="btnStatus" class="btn">Status</button>
-              <!--<button id="btnPatch" class="btn">Patch</button>
-              <button id="btnUnpatch" class="btn">Unpatch</button>-->
-              <button id="btnClear" class="btn">Clear log</button>
-              <button id="btnDebug" class="btn">Start Debug</button>
-            </div>
-
-            <div class="note">
-              Notes:<br>
-              Use the remote to navigate. Focus is highlighted.<br>
-              <br>
-              <b>Patch</b> and <b>Unpach</b> might close this application.<br>
-              Log is persistent, reopen to check success.<br>
-            </div>
+        <div class="line">
+          <div class="k switchdesc">Autostart at boot</div>
+          <div class="v">
+            <button id="autoBtn" class="item switch on" tabindex="0" type="button" aria-pressed="true">
+              <span class="knob"></span>
+            </button>
           </div>
         </div>
 
-        <div class="col right">
-          <div class="card">
-            <div class="cardTitle">Log</div>
-            <pre id="log" class="log" tabindex="0"></pre>
+        <div id="details" class="hidden">
+          <div class="h2">Log info</div>
+          <textarea class="item" id="log" tabindex="0" placeholder="None" readonly></textarea>
+
+          <div class="actions">
+			<div class="line">
+			  <div class="v"><button id="helpBtn" class="btn primary item" tabindex="0" type="button">Get Help</button></div>
+			</div>
+            
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- JS shows/hides this with el.spinner.style.display = 'flex' / 'none' -->
-  <div id="spinner" class="spinner" aria-hidden="true">
-    <div class="spinnerBox" role="status" aria-live="polite">
-      <div class="dots">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-      <div class="spinnerText">Loading…</div>
-    </div>
+<!-- Help modal -->
+<div id="helpLayer" class="hidden">
+  <div class="shade"></div>
+  <div class="popup" role="dialog" aria-modal="true">
+    <div class="popTitle">Get Help</div>
+    <img src="assets/QR.png" alt="QR">
+    <div id="url" class="url">https://github.com/azoffshowy/AmazOff</div>
+    <button id="closeBtn" class="btn item" tabindex="0" type="button">Close</button>
   </div>
+</div>
 
-  <div id="toast" class="toast" data-kind="neutral" aria-hidden="true"></div>
+<!-- Loading overlay -->
+<div id="loading" class="loading hidden" aria-live="polite">
+  <div class="loadCard">
+    <div class="spinner" aria-hidden="true"></div>
+    <div id="loadText" class="loadText">Starting…</div>
+  </div>
+</div>
 
-  <script src="js/webOSTVjs-1.2.10/webOSTV.js" charset="utf-8"></script>
-  <script src="js/polyfill.js"></script>
-  <script src="js/bridge.js"></script>
-  <script src="js/ui.js"></script>
+<script src="js/webOSTVjs-1.2.10/webOSTV.js"></script>
+<script src="js/spatial_navigation.js"></script>
+<script src="js/app.core.js"></script>
+<script src="js/app.nav.js"></script>
+<script>
+  // init
+  window.addEventListener("load", function () {
+    bindUi();
+    boot();
+  });
+</script>
 </body>
 </html>

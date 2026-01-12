@@ -39,7 +39,9 @@ netshim_start_nginx() {
   [ -f "$NGINX_CONF" ] || die "nginx.conf missing: $NGINX_CONF"
   
   rm -f "$ACCESS_LOG" "$NGINX_PID" "$NGINX_LOG" 2>/dev/null
-  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" -p "$BASE" >>"$NGINX_LOG" 2>&1 || die "nginx start failed"
+
+  daemonize "$NGINX_LOG" \
+  "$NGINX_BIN" -c "$NGINX_CONF" -g "pid $NGINX_PID;" -p "$BASE"
 
   # Wait briefly for pidfile creation
   i=0
@@ -49,22 +51,22 @@ netshim_start_nginx() {
   done
 
   p="$(read_pidfile "$NGINX_PID" || true)"
-  pid_alive "$p" && log "NGINX started pid=$p" || log "NGINX start failed"
+  pid_alive "$p" && log "NGINX started pid=$p" || log "NGINX start FAILED"
 }
 
 netshim_stop_nginx() {
   if [ -f "$NGINX_PID" ]; then
+    log "stopping nginx pid=$(cat "$NGINX_PID")"
     kill "$(cat "$NGINX_PID")" 2>/dev/null
     rm -f -- "$NGINX_PID"
-    log "Proxy stopped"
   fi
 }
 
 netshim_stop_mitm() {
   if [ -f "$MITM_PID" ]; then
+    log "stopping MITM pid=$(cat "$MITM_PID")"
     kill "$(cat "$MITM_PID")" 2>/dev/null
     rm -f -- "$MITM_PID"
-    log "MITM stopped"
   fi
 }
 
@@ -85,5 +87,14 @@ $(cat $ACCESS_LOG)"
     log "MITM log: $MITM_LOG"
   else
     log "MITM: not running"
+  fi
+}
+
+netshim_running() {
+  p="$(read_pidfile "$NGINX_PID" || true)"
+  if pid_alive "$p"; then
+    return 0
+  else
+    return 1
   fi
 }

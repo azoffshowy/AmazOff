@@ -7,6 +7,30 @@ DIR="$(dirname "$0")"
 
 require_root
 
+SERVICESTATE="unknown"
+setServiceState(){
+  if monitor_running && netshim_running; then
+    SERVICESTATE="running"
+  elif [ "${1:-}" = "start" ]; then
+    SERVICESTATE="error"
+  else
+    SERVICESTATE="stopped"
+  fi
+}
+
+AUTOSTART_ENABLED="false"
+setAutostartState(){
+if [ -f "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" ]; then
+  AUTOSTART_ENABLED="true"
+else
+  AUTOSTART_ENABLED="false"
+fi
+}
+
+printState(){
+  echo -n "{\"state\":{\"autostart\":${AUTOSTART_ENABLED:-},\"logs\":\"$(base64 < "$LOG" | tr -d '\n')\", \"service\":\"$SERVICESTATE\"}}"
+}
+
 case "$1" in
   start)
     : > "$LOG"
@@ -14,7 +38,11 @@ case "$1" in
     do_patch
     netshim_start_nginx
     monitor_start
-    log "Start successful"
+    if monitor_running && netshim_running; then
+      log "Start successful"
+    else
+      log "Start failed"
+    fi
     ;;
   stop)
     : > "$LOG"
@@ -22,6 +50,7 @@ case "$1" in
     monitor_stop
     netshim_stop_nginx
     netshim_stop_mitm
+    SERVICESTATE="stopped"
     log "Stop successful"
     ;;
   debug)
@@ -53,10 +82,11 @@ case "$1" in
     ;;
   autostart_toggle)
     : > "$LOG"
-    if [ -f "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" ]; then
-      rm -rf "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" 2>&1 >> $LOG && log "Removed Autostart"
+    setAutostartState
+    if [ "${AUTOSTART_ENABLED:-}" = "true" ]; then
+      rm -rf "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" >>"$LOG" 2>&1 && log "Removed Autostart"
     else
-      mkdir -p /var/lib/webosbrew/init.d && ln -sf $AUTOSTART_SCRIPT /var/lib/webosbrew/init.d/$AUTOSTART_ENTRY 2>&1 >> $LOG && log "Set Autostart"
+      mkdir -p /var/lib/webosbrew/init.d && ln -sf "$AUTOSTART_SCRIPT" "/var/lib/webosbrew/init.d/$AUTOSTART_ENTRY" >>"$LOG" 2>&1 && log "Set Autostart"
     fi
     ;;
   *)
@@ -64,3 +94,13 @@ case "$1" in
     exit 1
     ;;
 esac
+setServiceState "${1:-}"
+setAutostartState
+printState
+if [ "$SERVICESTATE" = "error" ];then
+  #recover partial start
+  monitor_stop
+  netshim_stop_nginx
+  netshim_stop_mitm
+fi
+exit 0

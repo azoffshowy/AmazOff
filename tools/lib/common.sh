@@ -8,7 +8,7 @@ TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
 PATCHER_BASE_DIR="/media/developer/apps/usr/palm/applications/$APP_ID"
 LOGS_BASE_DIR="$BASE/logs"
 LOG="$BASE/patcher.log"
-LOG_MON="$BASE/monitor.log"
+LOG_MON="$LOGS_BASE_DIR/monitor.log"
 ASSETS_DIR="$PATCHER_BASE_DIR/assets"
 TOOLS_DIR="$PATCHER_BASE_DIR/tools"
 SCRIPTS_DIR="$TOOLS_DIR/lib"
@@ -24,6 +24,17 @@ AUTOSTART_ENTRY="50-custom-amazoff"
 AUTOSTART_SCRIPT="$TOOLS_DIR/autostart.sh"
 TOASTFIX=""
 
+
+log() {
+  echo "$(date +%H:%M:%S) $*" >> "$LOG"
+}
+
+die() {
+  log "ERROR: $*"
+  echo "$(cat $LOG)"
+  exit 1
+}
+
 if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
     TARGET_APP_NAME="$APP_NAME_A"
 elif [ -d "$TARGET_BASE_DIR/$APP_NAME_B" ]; then
@@ -36,15 +47,6 @@ TARGET_DIR="$TARGET_BASE_DIR/$TARGET_APP_NAME"
 
 mkdir -m 777 -p "$BASE/logs"
 
-log() {
-  echo "$(date +%H:%M:%S) $*" >> "$LOG"
-}
-
-die() {
-  log "ERROR: $*"
-  exit 1
-}
-
 require_root() {
   if [ "$(id -u 2>/dev/null)" != "0" ]; then
     die "not root (must be run via hbchannel exec)"
@@ -54,4 +56,44 @@ require_root() {
 toast() {
   luna-send -n 1 $TOASTFIX luna://com.webos.notification/createToast \
     "{\"message\":\"$1\", \"iconUrl\":\"$PATCHER_BASE_DIR/amazoff.png\", \"sourceId\":\"$APP_ID\"}" >/dev/null 2>&1
+}
+
+daemonize() {
+  log_daemon="$1"; shift
+  echo "starting daemonize pid=$$" > $log_daemon
+
+  if command -v setsid >/dev/null 2>&1; then
+    echo "starting daemonize with setsid" >> $log_daemon
+    setsid sh -c '
+      log_daemon="$1"; shift
+      exec </dev/null >>"$log_daemon" 2>&1
+      echo "daemonize entered pid=$$" >&2
+      # close all inherited fds except 0/1/2
+      for fdpath in /proc/$$/fd/*; do
+        fd="${fdpath##*/}"
+        case "$fd" in
+          0|1|2) ;;
+          *) eval "exec ${fd}>&- ${fd}<&-" ;;
+        esac
+      done
+      echo "daemonize will now exec" >&2
+      exec "$@"
+    ' sh "$log_daemon" "$@" &
+  else
+    echo "starting daemonize with nohup" >> $log_daemon
+    nohup sh -c '
+      log_daemon="$1"; shift
+      exec </dev/null >>"$log_daemon" 2>&1
+      echo "daemonize entered pid=$$" >&2
+      for fdpath in /proc/$$/fd/*; do
+        fd="${fdpath##*/}"
+        case "$fd" in
+          0|1|2) ;;
+          *) eval "exec ${fd}>&- ${fd}<&-" ;;
+        esac
+      done
+      echo "daemonize will now exec" >&2
+      exec "$@"
+    ' sh "$log_daemon" "$@" &
+  fi
 }
