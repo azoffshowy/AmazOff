@@ -1,31 +1,14 @@
 #!/bin/sh
 BASE="/tmp/patcher"
-APP_ID="com.amazoff.patcher"
-TARGET_APP_NAME="amazon"
-APP_NAME_A="amazon"
-APP_NAME_B="lovefilm"
-TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
-PATCHER_BASE_DIR="/media/developer/apps/usr/palm/applications/$APP_ID"
 LOGS_BASE_DIR="$BASE/logs"
 LOG="$BASE/patcher.log"
-LOG_MON="$LOGS_BASE_DIR/monitor.log"
-ASSETS_DIR="$PATCHER_BASE_DIR/assets"
-TOOLS_DIR="$PATCHER_BASE_DIR/tools"
-SCRIPTS_DIR="$TOOLS_DIR/lib"
-NGINX_BIN="$TOOLS_DIR/nginx/nginx"
-NGINX_CONF="$TOOLS_DIR/nginx/nginx.conf"
-NGINX_PID="$BASE/nginx.pid"
-NGINX_LOG="$LOGS_BASE_DIR/nginx.log"
-NGINX_ACCESS_LOG="$LOGS_BASE_DIR/access.log"
-MITM_BIN="$TOOLS_DIR/mitm/mitm"
-MITM_PID="$LOGS_BASE_DIR/mitm.pid"
-MITM_LOG="$LOGS_BASE_DIR/mitm.log"
-AUTOSTART_ENTRY="50-custom-amazoff"
-AUTOSTART_SCRIPT="$TOOLS_DIR/autostart.sh"
-TOASTFIX=""
 
+mkdir -m 777 -p "$LOGS_BASE_DIR"
 
 log() {
+  if [ ! -f "$LOG" ]; then
+    : > $LOG
+  fi
   echo "$(date +%H:%M:%S) $*" >> "$LOG"
 }
 
@@ -34,6 +17,14 @@ die() {
   echo "$(cat $LOG)"
   exit 1
 }
+
+
+APP_ID="com.amazoff.patcher"
+TARGET_APP_NAME="amazon"
+APP_NAME_A="amazon"
+APP_NAME_B="lovefilm"
+TARGET_BASE_DIR="/media/cryptofs/apps/usr/palm/applications"
+TOASTFIX=""
 
 if [ -d "$TARGET_BASE_DIR/$APP_NAME_A" ]; then
     TARGET_APP_NAME="$APP_NAME_A"
@@ -45,7 +36,25 @@ else
 fi
 TARGET_DIR="$TARGET_BASE_DIR/$TARGET_APP_NAME"
 
-mkdir -m 777 -p "$BASE/logs"
+
+PATCHER_BASE_DIR="/media/developer/apps/usr/palm/applications/$APP_ID"
+PATCHER_RESOURCES_DIR="$PATCHER_BASE_DIR/resources/$TARGET_APP_NAME"
+LOG_MON="$LOGS_BASE_DIR/monitor.log"
+CONFIGS_DIR="$PATCHER_RESOURCES_DIR/config"
+CERT_DIR="$PATCHER_RESOURCES_DIR/tls"
+TOOLS_DIR="$PATCHER_BASE_DIR/tools"
+SCRIPTS_DIR="$TOOLS_DIR/lib"
+NGINX_BIN="$TOOLS_DIR/nginx/nginx"
+NGINX_CONF="$CONFIGS_DIR/nginx.conf"
+NGINX_PID="$BASE/nginx.pid"
+NGINX_LOG="$LOGS_BASE_DIR/nginx.log"
+NGINX_ACCESS_LOG="$LOGS_BASE_DIR/access.log"
+MITM_BIN="$TOOLS_DIR/mitm/mitm"
+MITM_PID="$LOGS_BASE_DIR/mitm.pid"
+MITM_LOG="$LOGS_BASE_DIR/mitm.log"
+AUTOSTART_ENTRY="50-custom-amazoff"
+AUTOSTART_SCRIPT="$TOOLS_DIR/autostart.sh"
+
 
 require_root() {
   if [ "$(id -u 2>/dev/null)" != "0" ]; then

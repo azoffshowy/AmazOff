@@ -50,7 +50,6 @@ case "$1" in
     monitor_stop
     netshim_stop_nginx
     netshim_stop_mitm
-    SERVICESTATE="stopped"
     log "Stop successful"
     ;;
   debug)

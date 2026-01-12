@@ -1,6 +1,6 @@
 #!/bin/sh
-CERT_DIR="$TARGET_DIR/bin/certs"
-CERT_DIR_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.framework.network/static/0.6.5/certs/ca-certs"
+TARGET_CERT_DIR="$TARGET_DIR/bin/certs"
+TARGET_CERT_DIR_LOVEFILM="$TARGET_DIR/plugins/com.amazon.ignition.framework.network/static/0.6.5/certs/ca-certs"
 CERT_NAME="fe1de658.0"
 HOSTS_JAIL="/mnt/lg/user/var/palm/jail/$TARGET_APP_NAME/etc/hosts"
 HOSTS_SYSTEM="/etc/hosts"
@@ -8,35 +8,35 @@ HOST_ENTRY="127.0.0.1 cloudfront.xp-assets.aiv-cdn.net"
 HOST_ENTRY_V6="::1 cloudfront.xp-assets.aiv-cdn.net"
 
 patch_cert_pin() {
-  if [ -d  $CERT_DIR ]; then
-    if [ ! -f "$CERT_DIR/$CERT_NAME" ]; then
-      cp "$ASSETS_DIR/$CERT_NAME" "$CERT_DIR/$CERT_NAME"
-      chmod 755 "$CERT_DIR/$CERT_NAME" 2>/dev/null || true
+  if [ -d  $TARGET_CERT_DIR ]; then
+    if [ ! -f "$TARGET_CERT_DIR/$CERT_NAME" ]; then
+      cp "$CERT_DIR/$CERT_NAME" "$TARGET_CERT_DIR/$CERT_NAME"
+      chmod 755 "$TARGET_CERT_DIR/$CERT_NAME" 2>/dev/null || true
       log "Placed CA cert"
     else
       log "CA already in place"
     fi
-  elif [ -d  $CERT_DIR_LOVEFILM ]; then
-    if [ ! -f "$CERT_DIR_LOVEFILM/$CERT_NAME" ]; then
-      cp "$ASSETS_DIR/$CERT_NAME" "$CERT_DIR_LOVEFILM/$CERT_NAME"
-      chmod 755 "$CERT_DIR_LOVEFILM/$CERT_NAME" 2>/dev/null || true
+  elif [ -d  $TARGET_CERT_DIR_LOVEFILM ]; then
+    if [ ! -f "$TARGET_CERT_DIR_LOVEFILM/$CERT_NAME" ]; then
+      cp "$CERT_DIR/$CERT_NAME" "$TARGET_CERT_DIR_LOVEFILM/$CERT_NAME"
+      chmod 755 "$TARGET_CERT_DIR_LOVEFILM/$CERT_NAME" 2>/dev/null || true
       log "Placed CA cert for lovefilm"
     else
       log "CA already in place"
     fi
   else
-    log "No cert directory found!"
+    die "No cert directory found!"
   fi
 }
 
 patch_default_conf(){
   [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak" 2>/dev/null
-  cat "$ASSETS_DIR/default_config.json" > "$TARGET_DIR/default_config.json"
+  cat "$CONFIGS_DIR/default_config.json" > "$TARGET_DIR/default_config.json"
 }
 
 patch_debug_conf(){
   [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak" 2>/dev/null
-  cat "$ASSETS_DIR/default_config_debug.json" > "$TARGET_DIR/default_config.json"
+  cat "$CONFIGS_DIR/default_config_debug.json" > "$TARGET_DIR/default_config.json"
   log "Patched Debug config"
   mkdir -m 777 -p "$TARGET_DIR/logs" 2>/dev/null || true
 }

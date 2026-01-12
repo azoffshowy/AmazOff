@@ -1,5 +1,5 @@
 #!/bin/sh
-ACCESS_LOG="$BASE/logs/access.log"
+ACCESS_LOG="$LOGS_BASE_DIR/access.log"
 
 pid_alive() { [ -n "$1" ] && kill -0 "$1" 2>/dev/null; }
 

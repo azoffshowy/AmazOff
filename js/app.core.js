@@ -126,6 +126,8 @@ function triggerScriptCommand(command, loadingMessage, timeout)
       state.service = SERVICE_ERROR;
       if(response.errorText)
         $("log").innerHTML = response.errorText;
+      if(response.stdoutString)
+        $("log").innerHTML += response.stdoutString;
     }else{
       responseState = JSON.parse(response.stdoutString);
       state.valid = true;
