@@ -37,14 +37,12 @@ This avoids manual packaging, signing, or SSH interaction.
 ## Usage
 
 1. Launch **AmazOff**
-2. Run **Patch**
-3. Observe output in the built-in log view.
-4. Launch the Amazon Prime Video App. A Popup-message should appear showing the patch loading state.
+2. Run **Start Service**
+3. Launch the Amazon Prime Video App. A Popup-message should appear showing the patch loading state.
 
 Notes:
-- The patcher may close immediately after a patch or unpatch operation.  
-  This behavior is expected. Log is persistent, you can check the actions outcome by reopening the patcher.
 - A successful patch is confirmed by a **toast notification** when the Amazon app is launched.
+- If the service cant be started you can check for possible fault in the **Details** page.
 
 ## Development Notes
 
