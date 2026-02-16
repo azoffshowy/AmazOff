@@ -6,7 +6,7 @@
 
 ## Overview
 
-**AmazOff** is an IPK application for **rooted LG webOS TVs**. It modifies the Amazon Prime Video Player with following patches applied:
+**AmazOff** is an IPK application for **rooted LG webOS TVs**. It extends the Amazon Prime Video Player with following patches applied:
 - Remove Ads (Pre-, Mid- and Endrolls)
 - Suppress telemetry
 
@@ -17,8 +17,12 @@ AmazOff requires **[Homebrew Channel](https://www.webosbrew.org/)** to be presen
 ## Status
 
 - **Development stage:** early / experimental  
-- **Tested on:** webOS 4.x, webOS 6.5, webOS 9.x
+- **Tested on:** webOS 3.x, webOS 4.x, webOS 6.5, webOS 9.x
 - **Amazon app variants:** 4.1.15, 6.3.38, 1.1.121
+
+## WebOS < 4.0
+
+On WebOS prior to 4.0 the No-Ads patch only removes loaded Ads. Pre-Rolls from prime themself are still embedded into the stream, but can be fast-forwarded out of.
 
 ## Requirements
 
@@ -38,13 +42,14 @@ This avoids manual packaging, signing, or SSH interaction.
 
 1. Launch **AmazOff**
 2. Run **Start Service**
-3. Launch the Amazon Prime Video App. A Popup-message should appear showing the patch loading state.
+3. **Optional**: Enable Autostart
+4. **Launch Target App**: Launch the Amazon Prime Video App.
 
 Notes:
-- A successful patch is confirmed by a **toast notification** when the Amazon app is launched.
+- A successful patch is confirmed by a **toast notification** when the Amazon app is launched (Only WebOS > 4.0).
 - If the service cant be started you can check for possible fault in the **Details** page.
 
 ## Development Notes
 
-Within the folder **development** you can find the applied patches to the player resources. It also contains a setup script for development as well as a script how the dev-version was then packed. 
+Within the folder **development** you can find the applied patches to the player resources. It also contains a setup script for development as well as a script how the dev-version was then packed. Feel free to PR additional patches.
 

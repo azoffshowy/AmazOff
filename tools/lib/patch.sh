@@ -121,7 +121,7 @@ do_patch_lovefilm() {
 do_unpatch_lovefilm() {
   require_root
   log "unpatch started: target=$TARGET_DIR"
-  rm -f "$CERT_DIR/fe1de658.0" 2>/dev/null || true
+  rm -f "$TARGET_CERT_DIR_LOVEFILM/fe1de658.0" 2>/dev/null || true
   log "removed Cert pinning"
 
   rm -f "$TARGET_CONF_LOVEFILM" 2>/dev/null || true
@@ -149,7 +149,7 @@ is_lovefilm_patched() {
 do_unpatch() {
   require_root
   log "unpatch started: target=$TARGET_DIR"
-  rm -f "$CERT_DIR/fe1de658.0" 2>/dev/null || true
+  rm -f "$TARGET_CERT_DIR/fe1de658.0" 2>/dev/null || true
   log "removed Cert pinning"
   unpatch_hosts
   if [ -f "$TARGET_DIR/default_config.json.bak" ]; then
