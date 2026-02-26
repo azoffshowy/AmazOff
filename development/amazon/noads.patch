@@ -1,115 +1,14 @@
---- ATVUnfPlayerBundle.beauty.js	2026-01-12 13:22:28.149704627 +0000
-+++ ATVUnfPlayerBundle.beauty_dev.js	2026-01-12 14:56:58.807210485 +0000
-@@ -3,10 +3,16 @@
-     },
-     ATVUnfPlayerBundle = freeOnUnref(function() {
+--- ATVUnfPlayerBundle.orig.js	2026-02-27 00:02:38.336981320 +0100
++++ ATVUnfPlayerBundle.dev.js	2026-02-27 00:08:58.912830019 +0100
+@@ -5,6 +5,7 @@
          "use strict";
-         var G = "undefined" != typeof globalThis ? globalThis : "undefined" != typeof window ? window : "undefined" != typeof global ? global : "undefined" != typeof self ? self : {};
+         var Q = "undefined" != typeof globalThis ? globalThis : "undefined" != typeof window ? window : "undefined" != typeof global ? global : "undefined" != typeof self ? self : {};
  
-+        var __HOMEBREW_DEBUG_LOGS = !1;
-+        var __HOMEBREW_DEBUG_LOGS_ENDPOINT = "127.0.0.1:8089";
 +        var __HOMEBREW_NOADS = !0;
-+        var __HOMEBREW_NOTELEMETRY = !1;
-+        var __HOMEBREW_NOMETRICS = !1;
-+
          function e(e) {
              return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e
          }
- 
-         function t(e, t) {
-@@ -3799,12 +3805,43 @@
-                         filterLevel: s.OFF
-                     });
-                     freeOnUnref(function() {
-                         var e = s;
-                         e.enabledFor = t(l, l.enabledFor), e.debug = t(l, l.debug), e.time = t(l, l.time), e.timeEnd = t(l, l.timeEnd), e.info = t(l, l.info), e.warn = t(l, l.warn), e.error = t(l, l.error), e.log = e.info
--                    })(), s.setHandler = freeOnUnref(function(e) {
--                        n = e
-+                    })(), s.setHandler = freeOnUnref(function(handler) {
-+                        n = freeOnUnref(function(args, ctx) {
-+                            if(__HOMEBREW_DEBUG_LOGS)
-+                            {
-+                                // Build log line
-+                                var msg = "[" + ctx.name + "] " +
-+                                        Array.prototype.slice.call(args).join(" ");
-+
-+                                try {
-+                                    if (typeof Native !== "undefined" &&
-+                                        typeof Native.HTTP_CreateHandler === "function") {
-+
-+                                        // POST to local Python server
-+                                        var h = Native.HTTP_CreateHandler(
-+                                            "POST",
-+                                            "http://"+__HOMEBREW_DEBUG_LOGS_ENDPOINT+"/log"
-+                                        );
-+                                        Native.HTTP_AddHeader(
-+                                            h,
-+                                            "content-type",
-+                                            "text/plain; charset=utf-8"
-+                                        );
-+
-+                                        // Send the log line as body
-+                                        Native.HTTP_SendAsync(h, msg);
-+                                    }
-+                                } catch (e) {
-+                                    // ignore
-+                                }
-+                            }
-+                            // Call the original handler installed by whoever called setHandler
-+                            return handler(args, ctx);
-+                        });
-                     }), s.setLevel = freeOnUnref(function(e) {
-                         for (var t in l.setLevel(e), r) r.hasOwnProperty(t) && r[t].setLevel(e)
-                     }), s.getLevel = freeOnUnref(function() {
-                         return l.getLevel()
-                     }), s.get = freeOnUnref(function(e) {
-@@ -12095,10 +12132,28 @@
-                     CLIENT_ERROR: "DroppedMetricEvent.Service.UploadClientError",
-                     NETWORK_ERROR: "Diagnostic.Service.UploadConnectionError",
-                     CONFIGURATION_ERROR: "Diagnostic.Service.UploadUnexpectedError"
-                 };
-             t.upload = function(e, t, n, r, i, o, a) {
-+                if(__HOMEBREW_NOMETRICS)
-+                {
-+                    var url = "http://"+__HOMEBREW_DEBUG_LOGS_ENDPOINT+"/metrics/" + encodeURIComponent(Nn.convertMetricEventsToIonText(e, a));
-+                    try {
-+                        if (typeof Native !== "undefined" && typeof Native.HTTP_CreateHandler === "function") {
-+                            var h = Native.HTTP_CreateHandler("GET", url);
-+                            Native.HTTP_SendAsync(h, "");
-+                        }
-+                    } catch (e) {
-+                    }
-+                    var PromiseImpl = Gn.getPromiseImpl();
-+                    return new PromiseImpl(freeOnUnref(function (resolve) {
-+                        resolve({
-+                            status: "SUCCESS",
-+                            message: ""
-+                        });
-+                    }));
-+                }
-                 var s = e.length,
-                     l = t.urlSchema.replace("{deviceType}", r).replace("{region}", t.minervaServiceRegion),
-                     u = jn.convertMetricEventsToIonText(e, a),
-                     f = {
-                         accept: "text/*",
-@@ -53205,10 +53260,14 @@
-                 value: !0
-             });
-             var n = freeOnUnref(function() {
-                 function e() {}
-                 return e.getReportingServiceUrlFromMarketplaceId = freeOnUnref(function(e) {
-+                    if(__HOMEBREW_NOTELEMETRY)
-+                    {
-+                        return "http://"+__HOMEBREW_DEBUG_LOGS_ENDPOINT+"/telemetry-sink";
-+                    }
-                     if (null != L.configurationStore.configuration && null != L.configurationStore.configuration.mediaEventReporting && "enabled" === L.configurationStore.configuration.mediaEventReporting.useGlobalTelemetryUrl) return "https://global.telemetry.insights.video.a2z.com";
-                     var t;
-                     switch (e) {
-                         case hg.MarketplaceID.ROW_NA:
-                         case hg.MarketplaceID.US:
-@@ -64512,11 +64571,11 @@
-                 }), e.prototype.resolveFromMediaRepresentation = freeOnUnref(function(e, t) {
-                     var n = this.mediaRepresentationProcessor.process(t);
+@@ -67190,7 +67191,7 @@
                      return this.resolveWithAdBreaks(e, n)
                  }), e.prototype.resolveWithAdBreaks = freeOnUnref(function(e, t) {
                      var n = this;
@@ -117,50 +16,65 @@
 +                    if (0 === t.length || __HOMEBREW_NOADS) return lt.Promise.resolve([]);
                      var r = this.getMainContentDurationMs(),
                          i = this.splitMainContent(t, r),
-                         o = new FU.XpAdPlaylistInterceptor(this.playerId, this.playlistEngine, this.titleIdView, this.mainContentView, this.mpPlayer, i);
-                     o.initialize(), this.playlistEngine.registerOnPositionInterceptor(o), this.playlistEngine.registerSeekInterceptor(o);
-                     var a = new DU.VmapTrackingEventListener(this.playerId, this.playlistEngine, this.mpPlayer, i, this.titleIdView, this.mainContentView, this.adEventReporter);
-@@ -65469,10 +65528,15 @@
-                     this.log = new qr.EphemeralJSLogger("AdAwareSeekInterceptor"), this.log.setId(e), this.playlistEngine = t, this.intraTitlePlaylist = n, this.adBreakManager = r, this.hasPrerollAdBreak = i
-                 }
+                         o = new ib.XpAdPlaylistInterceptor(this.playerId, this.playlistEngine, this.titleIdView, this.mainContentView, this.mpPlayer, i);
+@@ -68150,6 +68151,11 @@
                  return e.prototype.interceptSeek = freeOnUnref(function(e, t, n) {
                      var r = this;
                      this.log.info("Processing seek to " + e + "ms on timeline item index " + t);
 +                    if (__HOMEBREW_NOADS) {
-+                        var __xpIndex = YU.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine);
-+                        f.info("debugSimulatedAds: mapping-only seek interceptor returning xp index " + __xpIndex);
++                        var __xpIndex = Wb.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine);
++                        this.log.info("debugSimulatedAds: mapping-only seek interceptor returning xp index " + __xpIndex);
 +                        return lt.Promise.resolve(__xpIndex);
 +                    }
-                     var i = Pb.translateClientTimelineToIntraTitleIndex(t, n, this.intraTitlePlaylist),
-                         o = Pb.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine),
+                     var i = Wb.translateClientTimelineToIntraTitleIndex(t, n, this.intraTitlePlaylist),
+                         o = Wb.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine),
                          a = this.playlistEngine.getCurrentItemIndex() > o;
-                     if (this.adBreakManager.removeAdBreaksAheadOfPlayhead(o), this.playlistEngine.getCurrentItemIndex() === o) return this.log.info("Seeking within current chapter. Not resolving ads and returning original playlist engine index " + o), lt.Promise.resolve(o);
-                     if (0 === i || "Remote" !== this.intraTitlePlaylist[i - 1].type) return this.log.info("Previous item is not of type Remote or is preroll. Returning index " + o), lt.Promise.resolve(o);
-@@ -65522,10 +65586,12 @@
-             })();
-             t.PlaylistedPlaybackUrlsSourceCdnStore = n
-         }));
-         e(wb);
-         wb.PlaylistedPlaybackUrlsSourceCdnStore;
-+
-+
-         var kb = t(freeOnUnref(function(e, t) {
-             var M = G && G.__assign || freeOnUnref(function() {
-                 return (M = Object.assign || freeOnUnref(function(e) {
-                     for (var t, n = 1, r = arguments.length; n < r; n++)
-                         for (var i in t = arguments[n]) Object.prototype.hasOwnProperty.call(t, i) && (e[i] = t[i]);
-@@ -65594,10 +65660,14 @@
-                         t.consumptionId = e.sourceUrl.urlId, t.titleId = I.titleIdView.id.titleId, I.mediaEventController.reportManifestAcquisitionSuccess(t), I.sonarEventAdapter.handleManifestFetchedEvent()
-                     }), this.reportManifestAcquisitionFailure = freeOnUnref(function(e) {
+@@ -68275,6 +68281,10 @@
                          var t = e;
                          t.consumptionId = e.sourceUrl.urlId, t.titleId = I.titleIdView.id.titleId, I.mediaEventController.reportManifestAcquisitionFailure(t), I.sonarEventAdapter.handleManifestAcquisitionFailure(t)
-                     }), this.log.setId(e), this.playerId = e, this.contentConfig = t, this.playlistEngine = i, this.mediaKeysManager = h, this.mpPlayer = O, this.contentMetadata = a, this.playbackSettingsProvider = s, this.prioritizationSystem = l, this.playerBufferManager = u, this.streamFeature = f, this.videoPreviewFeature = c, this.hdcpStore = d, this.resolutionCappingStrategy = p, this.downloadOperationId = C, this.licenseAcquirer = o.licenseAcquirer, this.playlistedPlaybackUrls = o.playlistedPlaybackUrls, this.cacheStorageType = E, this.mediaEventController = m, this.titleIdView = y, this.globalStreamControl = g, this.sonarEventAdapter = v, this.consumptionIdUpdater = S, this.timeDataManager = U, this.adEventReporter = b, this.playlistTrackingEventReporter = P, this.suggestedPictureModes = T, this.seekInterceptorManager = M, this.playbackResourcesTimestamp = n, this.serviceClientFactory = r, this.intraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist, this.resourceAcquirer = new nd.ResourceAcquirer, this.adBreakContextUpdater = new Eb.AdBreakContextUpdater(this.mediaEventController), this.activePlaylistedPlaybackConsumptionIdTracker = new Cb.ActivePlaylistedPlaybackConsumptionIdTracker(this.playerId, this.consumptionIdUpdater), this.playlistedSourceCdnStore = new wb.PlaylistedPlaybackUrlsSourceCdnStore(this.playerId, this.playlistedPlaybackUrls.failoverPolicy.cdnOrder, this.activePlaylistedPlaybackConsumptionIdTracker), this.registerLicenseAcquisitionReporterCallbacks(this.licenseAcquirer), this.adBreakCustomMetadataReporter = new bb.AdBreakCustomMetadataReporter(this.playerId, this.mediaEventController), this.reportIntraTitlePlaylistPlaylistCustomMetadata(this.playlistedPlaybackUrls), this.reportTokenAuthCustomMetadata()
+                     }), this.log.setId(e), this.playerId = e, this.contentConfig = t, this.playlistEngine = i, this.mediaKeysManager = h, this.mpPlayer = S, this.contentMetadata = a, this.playbackSettingsProvider = s, this.prioritizationSystem = l, this.playerBufferManager = u, this.streamFeature = f, this.videoPreviewFeature = c, this.hdcpStore = d, this.resolutionCappingStrategy = p, this.downloadOperationId = C, this.licenseAcquirer = o.licenseAcquirer, this.playlistedPlaybackUrls = o.playlistedPlaybackUrls, this.cacheStorageType = T, this.mediaEventController = m, this.titleIdView = y, this.globalStreamControl = g, this.sonarEventAdapter = v, this.consumptionIdUpdater = O, this.timeDataManager = U, this.adEventReporter = b, this.playlistTrackingEventReporter = P, this.suggestedPictureModes = E, this.seekInterceptorManager = M, this.playbackResourcesTimestamp = n, this.serviceClientFactory = r, this.intraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist, this.resourceAcquirer = new eh.ResourceAcquirer, this.adBreakContextUpdater = new Qb.AdBreakContextUpdater(this.mediaEventController), this.activePlaylistedPlaybackConsumptionIdTracker = new Gb.ActivePlaylistedPlaybackConsumptionIdTracker(this.playerId, this.consumptionIdUpdater), this.playlistedSourceCdnStore = new Yb.PlaylistedPlaybackUrlsSourceCdnStore(this.playerId, this.playlistedPlaybackUrls.failoverPolicy.cdnOrder, this.activePlaylistedPlaybackConsumptionIdTracker), this.registerLicenseAcquisitionReporterCallbacks(this.licenseAcquirer), this.adBreakCustomMetadataReporter = new zb.AdBreakCustomMetadataReporter(this.playerId, this.mediaEventController), this.reportIntraTitlePlaylistPlaylistCustomMetadata(this.playlistedPlaybackUrls), this.reportTokenAuthCustomMetadata()
 +                    if(__HOMEBREW_NOADS){
 +                        this.rawIntraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist;
 +                        this.intraTitlePlaylist = this.intraTitlePlaylist.filter(freeOnUnref(function(it){ return "Main" === it.type; }));
 +                    }
                  }
                  return e.prototype.getStorageAccess = freeOnUnref(function() {
-                     return null != this.downloadOperationId ? 3 : 0
-                 }), e.prototype.createContent = freeOnUnref(function(e, t) {
-                     var n = this;
+                     return null != this.downloadOperationId ? 1 : 0
+@@ -92971,8 +92981,8 @@
+                             if (n && !i.canCachePlaylistedContent()) return lt.Promise.reject(new Error("Unable to cache ExPL content due to configuration check"));
+                             if (i.isPlaylistedContent = n) {
+                                 var r = ad.PlaybackResourceUtils.valueOrNull(t.playlistedPlaybackUrls);
+-                                null != r && (i.hasAds = i.detectAdContentFromEXPL(r), i.cacheTtlMs = i.getMinCachingTTLFromEXPL(r))
+-                            } else i.hasAds = i.detectAdContentFromPrs(i.prsResolverContentBaseResources), i.cacheTtlMs = i.getCachingTTLFromPrs(i.prsResolverContentBaseResources);
++                                null != r && (i.hasAds = __HOMEBREW_NOADS ? !1 : i.detectAdContentFromEXPL(r), i.cacheTtlMs = i.getMinCachingTTLFromEXPL(r))
++                            } else i.hasAds = __HOMEBREW_NOADS ? !1 : i.detectAdContentFromPrs(i.prsResolverContentBaseResources), i.cacheTtlMs = i.getCachingTTLFromPrs(i.prsResolverContentBaseResources);
+                             return wt.localStorage.put(Dd.createCachedPlaybackResourcesKey(i.id), JSON.stringify(t)).then(freeOnUnref(function() {
+                                 var e = jd.CacheTimingTracker.endTiming(i.id, "Prs");
+                                 return null != e && q.metrics.putMetric("XpPlayer.Cache.Prs.TimeMs", e), i.log.info("Playback resources cache success, titleId: " + i.cacheContentConfig.contentConfig.titleId + ", id: " + i.id + ", hasAds: " + i.hasAds), i.updateTTL()
+@@ -93053,7 +93063,7 @@
+                         }))
+                     }), u.prototype.cacheEXPLManifest = freeOnUnref(function() {
+                         var t = this;
+-                        if (!this.hasMinimumCacheLevel(Za.CacheLevel.DATA_SAVER) || this.isContentLiveStreaming()) return lt.Promise.resolve();
++                        if (__HOMEBREW_NOADS || !this.hasMinimumCacheLevel(Za.CacheLevel.DATA_SAVER) || this.isContentLiveStreaming()) return lt.Promise.resolve();
+                         if (this.log.info("EXPL manifest cache, titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), null == this.prsResolverContentBaseResources) return lt.Promise.reject(new Error("Attempted to cache EXPL manifest when no PRSResolverContext exists"));
+                         var n = ad.PlaybackResourceUtils.valueOrNull(this.prsResolverContentBaseResources.playbackResources.playlistedPlaybackUrls);
+                         if (null == n) return lt.Promise.reject(new Error("PlaylistedPlaybackUrls cannot be null for EXPL content"));
+@@ -93143,7 +93153,7 @@
+                             if (n(), !(e instanceof lt.CancelError)) return t.log.error("Unable to cache EXPL license for " + t.id + ', "' + e + '"'), lt.Promise.reject(e)
+                         }))
+                     }), u.prototype.cacheEXPLFragments = freeOnUnref(function() {
+-                        if (!this.hasMinimumCacheLevel(Za.CacheLevel.MAX) || this.isContentLiveStreaming()) return lt.Promise.resolve();
++                        if (__HOMEBREW_NOADS || !this.hasMinimumCacheLevel(Za.CacheLevel.MAX) || this.isContentLiveStreaming()) return lt.Promise.resolve();
+                         if (null == this.playlistedMediaRepresentation) throw new Error("Attempted to cache EXPL fragments when no PlaylistedMediaRepresentation exists");
+                         if (null == this.prsResolverContentBaseResources) return lt.Promise.reject(new Error("Attempted to cache EXPL fragment when no PRSResolverContext exists"));
+                         var r = this.prsResolverContentBaseResources.licenseAcquirer,
+@@ -93170,7 +93180,7 @@
+                         enumerable: !0,
+                         configurable: !0
+                     }), u.prototype.detectAdContentFromEXPL = freeOnUnref(function(e) {
+-                        if (!e || !e.intraTitlePlaylist) return !1;
++                        if (__HOMEBREW_NOADS || !e || !e.intraTitlePlaylist) return !1;
+                         for (var t = e.intraTitlePlaylist, n = 0; n < t.length; n++)
+                             if ("Remote" === t[n].type) return !0;
+                         return !1

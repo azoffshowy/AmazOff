@@ -1,0 +1,53 @@
+--- ATVUnfPlayerBundle.orig.js	2026-02-27 00:02:38.336981320 +0100
++++ ATVUnfPlayerBundle.dev.js	2026-02-27 00:05:53.578810897 +0100
+@@ -5,6 +5,8 @@
+         "use strict";
+         var Q = "undefined" != typeof globalThis ? globalThis : "undefined" != typeof window ? window : "undefined" != typeof global ? global : "undefined" != typeof self ? self : {};
+ 
++        var __HOMEBREW_DEBUG_LOGS = !0;
++        var __HOMEBREW_DEBUG_LOGS_ENDPOINT = "127.0.0.1:8089";
+         function e(e) {
+             return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e
+         }
+@@ -3801,8 +3803,39 @@
+                     freeOnUnref(function() {
+                         var e = s;
+                         e.enabledFor = t(l, l.enabledFor), e.debug = t(l, l.debug), e.time = t(l, l.time), e.timeEnd = t(l, l.timeEnd), e.info = t(l, l.info), e.warn = t(l, l.warn), e.error = t(l, l.error), e.log = e.info
+-                    })(), s.setHandler = freeOnUnref(function(e) {
+-                        n = e
++                    })(), s.setHandler = freeOnUnref(function(handler) {
++                        n = freeOnUnref(function(args, ctx) {
++                            if(__HOMEBREW_DEBUG_LOGS)
++                            {
++                                // Build log line
++                                var msg = "[" + ctx.name + "] " +
++                                        Array.prototype.slice.call(args).join(" ");
++
++                                try {
++                                    if (typeof Native !== "undefined" &&
++                                        typeof Native.HTTP_CreateHandler === "function") {
++
++                                        // POST to local Python server
++                                        var h = Native.HTTP_CreateHandler(
++                                            "POST",
++                                            "http://"+__HOMEBREW_DEBUG_LOGS_ENDPOINT+"/log"
++                                        );
++                                        Native.HTTP_AddHeader(
++                                            h,
++                                            "content-type",
++                                            "text/plain; charset=utf-8"
++                                        );
++
++                                        // Send the log line as body
++                                        Native.HTTP_SendAsync(h, msg);
++                                    }
++                                } catch (e) {
++                                    // ignore
++                                }
++                            }
++                            // Call the original handler installed by whoever called setHandler
++                            return handler(args, ctx);
++                        });
+                     }), s.setLevel = freeOnUnref(function(e) {
+                         for (var t in l.setLevel(e), r) r.hasOwnProperty(t) && r[t].setLevel(e)
+                     }), s.getLevel = freeOnUnref(function() {

@@ -7,7 +7,7 @@
          6331: function(e, t, n) {
              "use strict";
              n.r(t), n.d(t, {
-@@ -4416,10 +4417,16 @@
+@@ -4416,10 +4417,14 @@
                                      try {
                                          if (a = JSON.parse(o), !Ke()(a.error)) {
                                              var s = lt.createError(a.error);
@@ -15,9 +15,7 @@
                                          }
 +                                        if(_HOMEBREW_NO_AD_IN_RESPONSE && a && a.cuepointPlaylist)
 +                                        {
-+                                            delete a.cuepointPlaylist.cuepointFulfillmentMetadata
-+                                            delete a.cuepointPlaylist.encodedManifest
-+                                            delete a.cuepointPlaylist.format
++                                            delete a.cuepointPlaylist
 +                                        }
                                          a.errorsByResource = lt.convertResourceExceptions(a.errorsByResource), a.returnedTitleRendition = lt
                                              .convertRightsException(a.returnedTitleRendition)
