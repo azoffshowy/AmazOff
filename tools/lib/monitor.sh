@@ -1,6 +1,6 @@
 # lib/monitor.sh
 MON_PID="$BASE/monitor.pid"
-TRIGGER_RE='ATVUnfPlayerBundle\.js.*200'   # adapt to your log format
+TRIGGER_RE='ATVUnfPlayerBundle\.js.*200.*patch=[0-9a-f]+'   # only count verified patched responses
 
 pid_alive() { [ -n "$1" ] && kill -0 "$1" 2>/dev/null; }
 read_pidfile() { [ -f "$1" ] && cat "$1" 2>/dev/null; }

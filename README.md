@@ -18,7 +18,7 @@ AmazOff requires **[Homebrew Channel](https://www.webosbrew.org/)** to be presen
 
 - **Development stage:** early / experimental  
 - **Tested on:** webOS 3.x, webOS 4.x, webOS 6.5, webOS 9.x, webOS 10.x
-- **Amazon app variants:** 4.1.15, 6.3.38, 1.1.121
+- **Amazon app variants:** 4.1.15, 6.3.38, 6.3.42, 1.1.121
 
 ## WebOS < 4.0
 
@@ -53,3 +53,8 @@ Notes:
 
 Within the folder **development** you can find the applied patches to the player resources. It also contains a setup script for development as well as a script how the dev-version was then packed. Feel free to PR additional patches.
 
+## Updating the Amazon player bundle
+
+The player JavaScript is served by Amazon and changes independently of the installed IPK. Run `development/amazon/setupDev.sh` to download the selected upstream bundle, verify its SHA-256, apply the structural no-ads transformations, validate the generated JavaScript, and update the patch manifest. The script fails closed when the upstream hash changes, so a new bundle must be reviewed before it can be packaged.
+
+The manifest and response headers record both the upstream and patched hashes. On webOS 6.5, restart the Amazon app after starting the service so a cached player bundle is discarded. `patchctl status` shows the validated bundle identity and the Nginx access log records each verified patched response.

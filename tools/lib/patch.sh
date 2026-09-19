@@ -95,13 +95,46 @@ unpatch_hosts_helper() {
   [ -f "$f" ] || die "hosts missing: $f"
 
   tmp="/tmp/hosts.tmp.$$"
-  awk -v line="$HOST_ENTRY" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
-  awk -v line="$HOST_ENTRY_V6" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
+  awk -v l4="$HOST_ENTRY" -v l6="$HOST_ENTRY_V6" '$0 != l4 && $0 != l6 { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
   cat "$tmp" > "$f" || { rm -f "$tmp"; die "replace failed: $f"; }
+}
+
+manifest_field() {
+  field="$1"
+  [ -f "$PATCH_MANIFEST" ] || return 1
+  sed -n "s/.*\"$field\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$PATCH_MANIFEST" | head -n 1
+}
+
+validate_patch_bundle() {
+  [ -f "$PATCH_MANIFEST" ] || die "Patch manifest missing: $PATCH_MANIFEST"
+
+  expected="$(manifest_field sourceSha256 || true)"
+  source_url="$(manifest_field sourceUrl || true)"
+  [ -n "$expected" ] || die "Patch manifest has no source hash"
+  [ -n "$source_url" ] || die "Patch manifest has no source URL"
+
+  upstream_tmp="$BASE/upstream-bundle.$$"
+  rm -f "$upstream_tmp"
+  if ! wget -q -O "$upstream_tmp" "$source_url"; then
+    wget -q --no-check-certificate -O "$upstream_tmp" "$source_url" || die "Could not retrieve upstream player bundle"
+  fi
+  actual="$(sha256sum "$upstream_tmp" | awk '{print $1}')"
+  rm -f "$upstream_tmp"
+  [ "$actual" = "$expected" ] || die "Unsupported upstream player bundle: expected $expected, got $actual"
+  log "Validated upstream player bundle sha256=$actual"
+}
+
+unpatch_hosts_if_present() {
+  for f in "$HOSTS_SYSTEM" "$HOSTS_JAIL"; do
+    [ -f "$f" ] && unpatch_hosts_helper "$f"
+  done
 }
 
 do_patch() {
   require_root
+  # Validate against the real upstream, not our own override from a previous start
+  unpatch_hosts_if_present
+  validate_patch_bundle
   log "patching target=$TARGET_DIR"
   patch_default_conf
   patch_cert_pin
@@ -166,6 +199,13 @@ patch_status_log() {
   log "---- PATCH INFO ----"
   log "targetAppName: $TARGET_APP_NAME"
   log "targetAppDir: $TARGET_DIR"
+  if [ -f "$PATCH_MANIFEST" ]; then
+    log "sourceSha256: $(manifest_field sourceSha256)"
+    log "patchedSha256: $(manifest_field patchedSha256)"
+    log "sourceUrl: $(manifest_field sourceUrl)"
+  else
+    log "patch manifest: missing"
+  fi
   if [ -f "$CERT_DIR/$CERT_NAME" ]; then
     log "CA in place"
   else
