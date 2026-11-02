@@ -155,9 +155,14 @@ unpatch_hosts_helper() {
     return 1
   fi
 
+  # Remove both override entries in a single pass. Two sequential awk runs
+  # into the same temp file would truncate each other (the second pass
+  # rewrites the temp file from the still-unpatched source), leaving the
+  # IPv4 override behind after unpatch.
   tmp="/tmp/hosts.tmp.$$"
-  awk -v line="$HOST_ENTRY" '$0 != line { print }' "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot unpatch $f"; return 1; }
-  awk -v line="$HOST_ENTRY_V6" '$0 != line { print }' "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot unpatch $f"; return 1; }
+  awk -v line4="$HOST_ENTRY" -v line6="$HOST_ENTRY_V6" '
+    $0 != line4 && $0 != line6 { print }
+  ' "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot unpatch $f"; return 1; }
   cat "$tmp" > "$f" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot write $f (read-only)"; return 1; }
   rm -f "$tmp"
   return 0
