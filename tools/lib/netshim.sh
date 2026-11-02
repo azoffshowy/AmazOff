@@ -14,7 +14,14 @@ netshim_start_mitm() {
   [ -x "$MITM_BIN" ] || die "MITM not executable: $MITM_BIN"
   
   rm -f "$MITM_LOG" "$MITM_PID" 2>/dev/null
-  "$MITM_BIN" $LOGS_BASE_DIR 2>&1 || die "mitm start failed"
+
+  # webOS 11.x: run as transparent CONNECT-redirect to the local nginx
+  # (runtime interception, no time limit). Below 11 keep plain debug MITM.
+  if [ "$WEBOS_MAJOR" -ge 11 ]; then
+    REDIRECT_TARGET="127.0.0.1:443" "$MITM_BIN" $LOGS_BASE_DIR 2>&1 || die "mitm start failed"
+  else
+    "$MITM_BIN" $LOGS_BASE_DIR 2>&1 || die "mitm start failed"
+  fi
 
   # Wait briefly for pidfile creation
   i=0

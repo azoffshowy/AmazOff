@@ -9,7 +9,24 @@ HOSTS_SYSTEM="/etc/hosts"
 HOST_ENTRY="127.0.0.1 cloudfront.xp-assets.aiv-cdn.net"
 HOST_ENTRY_V6="::1 cloudfront.xp-assets.aiv-cdn.net"
 
+# WebOS 11.x detection (VERSION_ID="11.2.0" -> 11)
+WEBOS_MAJOR="$(sed -n 's/^VERSION_ID="\{0,1\}\([0-9][0-9]*\).*/\1/p' /etc/os-release 2>/dev/null | head -1)"
+[ -n "$WEBOS_MAJOR" ] || WEBOS_MAJOR=0
+
 patch_cert_pin() {
+  # webOS 11.x: the app directory is a read-write overlayfs (squashfs lowerdir)
+  # which is only mounted while the target app runs. If the cert dir is not
+  # visible yet, launch the target app once to get the overlay mounted, wait,
+  # then pin. The written CA persists in the overlay upperdir across restarts.
+  if [ ! -d "$TARGET_CERT_DIR" ] && [ ! -d "$TARGET_CERT_DIR_LOVEFILM" ]; then
+    log "cert dir not mounted, launching target app to mount overlay..."
+    luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$TARGET_APP_NAME\"}" >/dev/null 2>&1
+    i=0
+    while [ ! -d "$TARGET_CERT_DIR" ] && [ $i -lt 20 ]; do
+      sleep 1
+      i=$((i+1))
+    done
+  fi
   if [ -d  $TARGET_CERT_DIR ]; then
     if [ ! -f "$TARGET_CERT_DIR/$CERT_NAME" ]; then
       cp "$CERT_DIR/$CERT_NAME" "$TARGET_CERT_DIR/$CERT_NAME"
@@ -27,7 +44,7 @@ patch_cert_pin() {
       log "CA already in place"
     fi
   else
-    die "No cert directory found!"
+    log "WARN: no cert directory found, skipping CA pin"
   fi
 }
 
@@ -42,8 +59,15 @@ patch_lovefilm_chunk(){
 }
 
 patch_default_conf(){
+  if [ "$WEBOS_MAJOR" -ge 11 ]; then
+    # webOS 11.x: interception runs via the app proxy (http-proxy-server);
+    # /etc/hosts and DNS are not honoured by the app downloader (curl/c-ares).
+    SRC="$CONFIGS_DIR/default_config_webos11.json"
+  else
+    SRC="$CONFIGS_DIR/default_config.json"
+  fi
   [ -f "$TARGET_DIR/default_config.json.bak" ] || cp "$TARGET_DIR/default_config.json" "$TARGET_DIR/default_config.json.bak" 2>/dev/null
-  cat "$CONFIGS_DIR/default_config.json" > "$TARGET_DIR/default_config.json"
+  cat "$SRC" > "$TARGET_DIR/default_config.json"
 }
 
 patch_debug_conf(){
@@ -76,18 +100,20 @@ patch_hosts_helper() {
   f="$1"
   d="$(dirname "$f")"
 
-  mkdir -p "$d" || die "mkdir failed: $d"
-  [ -f "$f" ] || : >"$f" || die "create failed: $f"
+  # webOS 11.x: /etc/hosts is read-only; the jail hosts file is what the
+  # webview honours, so a read-only system hosts file is tolerated.
+  mkdir -p "$d" 2>/dev/null || true
+  [ -f "$f" ] || : >"$f" 2>/dev/null || log "WARN: cannot create $f"
 
   awk -v line="$HOST_ENTRY" '
     $0 == line { found=1 }
     END { exit (found ? 0 : 1) }
-  ' "$f" || printf '\n%s\n' "$HOST_ENTRY" >>"$f"
+  ' "$f" || printf '\n%s\n' "$HOST_ENTRY" >>"$f" 2>/dev/null || log "WARN: cannot write $f (read-only)"
 
   awk -v line="$HOST_ENTRY_V6" '
     $0 == line { found=1 }
     END { exit (found ? 0 : 1) }
-  ' "$f" || printf '\n%s\n' "$HOST_ENTRY_V6" >>"$f"
+  ' "$f" || printf '\n%s\n' "$HOST_ENTRY_V6" >>"$f" 2>/dev/null || log "WARN: cannot write $f (read-only)"
 }
 
 unpatch_hosts_helper() {

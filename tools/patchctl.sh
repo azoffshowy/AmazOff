@@ -19,7 +19,19 @@ setServiceState(){
     fi
   else
     if monitor_running && netshim_running; then
-      SERVICESTATE="running"
+      if [ "$WEBOS_MAJOR" -ge 11 ]; then
+        # webOS 11.x: the redirect MITM is part of the running chain
+        pm="$(read_pidfile "$MITM_PID" || true)"
+        if pid_alive "$pm"; then
+          SERVICESTATE="running"
+        elif [ "${1:-}" = "start" ]; then
+          SERVICESTATE="error"
+        else
+          SERVICESTATE="stopped"
+        fi
+      else
+        SERVICESTATE="running"
+      fi
     elif [ "${1:-}" = "start" ]; then
       SERVICESTATE="error"
     else
@@ -50,6 +62,11 @@ case "$1" in
       log "starting network inject"
       do_patch
       netshim_start_nginx
+      # webOS 11.x: interception runs via the app proxy, the MITM binary
+      # redirects the player bundle host to the local nginx.
+      if [ "$WEBOS_MAJOR" -ge 11 ]; then
+        netshim_start_mitm
+      fi
       monitor_start
       if monitor_running && netshim_running; then
         log "Start successful"

@@ -17,8 +17,16 @@ AmazOff requires **[Homebrew Channel](https://www.webosbrew.org/)** to be presen
 ## Status
 
 - **Development stage:** early / experimental  
-- **Tested on:** webOS 3.x, webOS 4.x, webOS 6.5, webOS 9.x, webOS 10.x
-- **Amazon app variants:** 4.1.15, 6.3.38, 1.1.121
+- **Tested on:** webOS 3.x, webOS 4.x, webOS 6.5, webOS 9.x, webOS 10.x, webOS 11.2 (Amazon app 11.0.3)
+- **Amazon app variants:** 4.1.15, 6.3.38, 1.1.121, 11.0.3 (player bundle `ATVUnfPlayerBundle-1.0.25364.0`, `wave3`)
+
+## WebOS 11.x
+
+On webOS 11 the interception mode changes:
+
+- `/etc/hosts` is read-only and the app downloader (curl) bypasses it anyway — the app config key `http-proxy-server` is used instead: AmazOff runs a small local proxy that tunnels all traffic untouched and redirects only the player bundle host (`cloudfront.xp-assets.aiv-cdn.net`) to the local nginx.
+- The app directory is a read-only squashfs mounted as a writable overlay **while the app runs**; `Start Service` launches the target app briefly to pin the AmazOff CA into its cert store (`bin/certs`). The pin persists in the overlay across restarts.
+- The player bundle is fetched from `.../family/lg/ATVUnfPlayerBundle-1.0[/version]/wave3/js/ATVUnfPlayerBundle.js`.
 
 ## WebOS < 4.0
 
