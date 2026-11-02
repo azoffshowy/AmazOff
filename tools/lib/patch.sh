@@ -91,17 +91,29 @@ patch_debug_certs(){
 }
 
 patch_hosts(){
-  patch_hosts_helper "$HOSTS_SYSTEM"
-  log "Patched system hosts"
-  patch_hosts_helper "$HOSTS_JAIL"
-  log "Patched jail hosts"
+  if patch_hosts_helper "$HOSTS_SYSTEM"; then
+    log "Patched system hosts"
+  else
+    log "Skipped system hosts (read-only)"
+  fi
+  if patch_hosts_helper "$HOSTS_JAIL"; then
+    log "Patched jail hosts"
+  else
+    log "WARN: could not patch jail hosts"
+  fi
 }
 
 unpatch_hosts(){
-  unpatch_hosts_helper "$HOSTS_SYSTEM"
-  log "Unpatched system hosts"
-  unpatch_hosts_helper "$HOSTS_JAIL" 
-  log "Unpatched jail hosts"
+  if unpatch_hosts_helper "$HOSTS_SYSTEM"; then
+    log "Unpatched system hosts"
+  else
+    log "Skipped system hosts (read-only)"
+  fi
+  if unpatch_hosts_helper "$HOSTS_JAIL"; then
+    log "Unpatched jail hosts"
+  else
+    log "WARN: could not unpatch jail hosts"
+  fi
 }
 
 patch_hosts_helper() {
@@ -111,27 +123,44 @@ patch_hosts_helper() {
   # webOS 11.x: /etc/hosts is read-only; the jail hosts file is what the
   # webview honours, so a read-only system hosts file is tolerated.
   mkdir -p "$d" 2>/dev/null || true
-  [ -f "$f" ] || : >"$f" 2>/dev/null || log "WARN: cannot create $f"
+  [ -f "$f" ] || : >"$f" 2>/dev/null || { log "WARN: cannot create $f"; return 1; }
 
-  awk -v line="$HOST_ENTRY" '
+  ok=0
+  if awk -v line="$HOST_ENTRY" '
     $0 == line { found=1 }
     END { exit (found ? 0 : 1) }
-  ' "$f" || printf '\n%s\n' "$HOST_ENTRY" >>"$f" 2>/dev/null || log "WARN: cannot write $f (read-only)"
+  ' "$f" 2>/dev/null; then
+    ok=1
+  elif printf '\n%s\n' "$HOST_ENTRY" >>"$f" 2>/dev/null; then
+    ok=1
+  fi
 
-  awk -v line="$HOST_ENTRY_V6" '
+  if awk -v line="$HOST_ENTRY_V6" '
     $0 == line { found=1 }
     END { exit (found ? 0 : 1) }
-  ' "$f" || printf '\n%s\n' "$HOST_ENTRY_V6" >>"$f" 2>/dev/null || log "WARN: cannot write $f (read-only)"
+  ' "$f" 2>/dev/null; then
+    ok=1
+  elif printf '\n%s\n' "$HOST_ENTRY_V6" >>"$f" 2>/dev/null; then
+    ok=1
+  fi
+
+  [ "$ok" = 1 ] || log "WARN: cannot write $f (read-only)"
+  return "$ok"
 }
 
 unpatch_hosts_helper() {
   f="$1"
-  [ -f "$f" ] || die "hosts missing: $f"
+  if [ ! -f "$f" ]; then
+    log "WARN: hosts missing: $f"
+    return 1
+  fi
 
   tmp="/tmp/hosts.tmp.$$"
-  awk -v line="$HOST_ENTRY" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
-  awk -v line="$HOST_ENTRY_V6" '$0 != line { print }' "$f" >"$tmp" || die "write tmp failed: $tmp"
-  cat "$tmp" > "$f" || { rm -f "$tmp"; die "replace failed: $f"; }
+  awk -v line="$HOST_ENTRY" '$0 != line { print }' "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot unpatch $f"; return 1; }
+  awk -v line="$HOST_ENTRY_V6" '$0 != line { print }' "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot unpatch $f"; return 1; }
+  cat "$tmp" > "$f" 2>/dev/null || { rm -f "$tmp"; log "WARN: cannot write $f (read-only)"; return 1; }
+  rm -f "$tmp"
+  return 0
 }
 
 do_patch() {
