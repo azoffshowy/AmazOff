@@ -1,0 +1,9 @@
+# Force LF for all text files: the IPK packs the working tree verbatim and
+# webOS busybox sh / nginx / the player bundle all require LF. This repo is
+# built on Windows sometimes - normalize here so packages are always clean.
+* text=auto eol=lf
+
+# binaries
+*.png binary
+*.ipk binary
+tools/mitm/mitm binary
