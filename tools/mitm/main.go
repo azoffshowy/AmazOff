@@ -1,15 +1,23 @@
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 	"syscall"
+	"time"
+
 	"github.com/elazarl/goproxy"
 )
+
+// webOS 11.x: the stock player-bundle host is transparently redirected to the
+// local nginx (serving the patched player bundle) by hijacking its CONNECT;
+// every other host is tunnelled through untouched. The app talks real TLS to
+// nginx, so no MITM cert handling is involved.
+const bundleHost = "cloudfront.xp-assets.aiv-cdn.net"
 
 func main() {
 	if os.Getenv("DAEMONIZED") == "" {
@@ -35,6 +43,11 @@ func main() {
 		fatalf("cannot create log dir %q: %v", logDir, err)
 	}
 
+	redirect := os.Getenv("REDIRECT_TARGET")
+	if redirect == "" {
+		redirect = "127.0.0.1:443"
+	}
+
 	pidFile := filepath.Join(logDir, "mitm.pid")
 	pid := os.Getpid()
 
@@ -55,6 +68,11 @@ func main() {
 	defer os.Remove(pidFile)
 
 	go func() {
+		// The redirect proxy is the runtime interception on webOS 11.x and
+		// must not expire; keep the time limit for plain debug MITM only.
+		if os.Getenv("REDIRECT_TARGET") != "" {
+			return
+		}
 		time.Sleep(5 * time.Minute)
 		logf("proxy stop: time limit reached (5 minutes)")
 		os.Exit(0)
@@ -70,16 +88,51 @@ func main() {
 	os.Stdout = logFile
 	os.Stderr = logFile
 
-	logf("proxy start")
+	logf("proxy start (redirect %q -> %s, everything else tunnelled)", bundleHost, redirect)
 
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
 	proxy.Logger = gpLogger{}
 
-	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
-	// enable MITM cert caching (recommended for production) :contentReference[oaicite:4]{index=4}
-	proxy.CertStore = NewDiskCertStore(filepath.Join(logDir, "certcache"))
+	// Redirect the bundle host CONNECT to the local nginx. We hijack the
+	// connection, answer 200 ourselves and pipe bytes to the redirect
+	// target: the app then does its TLS handshake against nginx directly.
+	proxy.OnRequest(goproxy.DstHostIs(bundleHost)).HandleConnectFunc(
+		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+			return &goproxy.ConnectAction{
+				Action: goproxy.ConnectHijack,
+				Hijack: func(req *http.Request, client net.Conn, ctx *goproxy.ProxyCtx) {
+					logf("REDIRECT\t%s\t->\t%s", host, redirect)
+					up, derr := net.Dial("tcp", redirect)
+					if derr != nil {
+						ctx.Warnf("redirect dial failed: %v", derr)
+						_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
+						_ = client.Close()
+						return
+					}
+					if _, werr := client.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n")); werr != nil {
+						ctx.Warnf("redirect write 200 failed: %v", werr)
+						_ = up.Close()
+						_ = client.Close()
+						return
+					}
+					done := make(chan struct{}, 2)
+					go func() {
+						_, _ = io.Copy(up, client)
+						done <- struct{}{}
+					}()
+					go func() {
+						_, _ = io.Copy(client, up)
+						done <- struct{}{}
+					}()
+					<-done
+					_ = up.Close()
+					_ = client.Close()
+				},
+			}, host
+		})
 
+	// Log every plain HTTP request that transits the proxy.
 	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		host := req.Host
 		if req.URL != nil && req.URL.Host != "" {
@@ -109,9 +162,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":8998",
 		Handler:      proxy,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		TLSConfig:    &tls.Config{MinVersion: tls.VersionTLS12},
+		ReadTimeout:  120 * time.Second,
+		WriteTimeout: 120 * time.Second,
 	}
 
 	logf("listening on :8998")
@@ -120,7 +172,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-
 
 func now() string {
 	return time.Now().UTC().Format("2006-01-02 15:04:05")

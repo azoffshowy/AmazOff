@@ -1,0 +1,85 @@
+--- ATVUnfPlayerBundle.orig.js	2026-11-02
++++ ATVUnfPlayerBundle.dev.js	2026-11-02
+@@ -5,6 +5,8 @@ var freeOnUnref = function(e) {
+         "use strict";
+         var Ly = "undefined" != typeof globalThis ? globalThis : "undefined" != typeof window ? window : "undefined" != typeof global ? global : "undefined" != typeof self ? self : {};
+ 
++        var __HOMEBREW_NOADS = !0;
++
+         function e(e) {
+             return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e
+         }
+@@ -86972,7 +86974,7 @@ var freeOnUnref = function(e) {
+                     return this.resolveWithAdBreaks(e, n)
+                 }), e.prototype.resolveWithAdBreaks = freeOnUnref(function(e, t) {
+                     var n = this;
+-                    if (0 === t.length) return Ky.Promise.resolve([]);
++                    if (0 === t.length || __HOMEBREW_NOADS) return Ky.Promise.resolve([]);
+                     var r = this.getMainContentDurationMs(),
+                         i = this.splitMainContent(t, r),
+                         o = new DE.XpAdPlaylistInterceptor(this.playerId, this.playlistEngine, this.titleIdView, this.mainContentView, this.mpPlayer, i);
+@@ -88120,6 +88122,11 @@ var freeOnUnref = function(e) {
+                 return e.prototype.interceptSeek = freeOnUnref(function(e, t, n) {
+                     var r = this;
+                     this.log.info("Processing seek to " + e + "ms on timeline item index " + t);
++                    if (__HOMEBREW_NOADS) {
++                        var __xpIndex = nI.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine);
++                        this.log.info("debugSimulatedAds: mapping-only seek interceptor returning xp index " + __xpIndex);
++                        return Ky.Promise.resolve(__xpIndex);
++                    }
+                     var i = nI.translateClientTimelineToIntraTitleIndex(t, n, this.intraTitlePlaylist),
+                         o = nI.translateClientTimelineIndexToXpPlaylistIndex(t, n, this.playlistEngine),
+                         a = this.playlistEngine.getCurrentItemIndex() > o;
+@@ -88405,7 +88412,13 @@ var freeOnUnref = function(e) {
+                             intraTitlePlaylist: R
+                         }))
+                     } else this.log.info("Skipping drop conditions: enableContinueWatchingPreroll is not enabled.");
+-                    this.vendedIntraTitlePlaylist = A, this.intraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist, this.resourceAcquirer = new kS.ResourceAcquirer, this.adBreakContextUpdater = new aI.AdBreakContextUpdater(this.mediaEventController), this.activePlaylistedPlaybackConsumptionIdTracker = new oI.ActivePlaylistedPlaybackConsumptionIdTracker(this.playerId, this.consumptionIdUpdater), this.playlistedSourceCdnStore = new fI.PlaylistedPlaybackUrlsSourceCdnStore(this.playerId, this.playlistedPlaybackUrls.failoverPolicy.cdnOrder, this.activePlaylistedPlaybackConsumptionIdTracker, this.mediaEventController), this.registerLicenseAcquisitionReporterCallbacks(this.licenseAcquirer), this.adBreakCustomMetadataReporter = new tI.AdBreakCustomMetadataReporter(this.playerId, this.mediaEventController), this.reportIntraTitlePlaylistPlaylistCustomMetadata(this.vendedIntraTitlePlaylist), this.reportTokenAuthCustomMetadata()
++                    this.vendedIntraTitlePlaylist = A, this.intraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist, this.resourceAcquirer = new kS.ResourceAcquirer, this.adBreakContextUpdater = new aI.AdBreakContextUpdater(this.mediaEventController), this.activePlaylistedPlaybackConsumptionIdTracker = new oI.ActivePlaylistedPlaybackConsumptionIdTracker(this.playerId, this.consumptionIdUpdater), this.playlistedSourceCdnStore = new fI.PlaylistedPlaybackUrlsSourceCdnStore(this.playerId, this.playlistedPlaybackUrls.failoverPolicy.cdnOrder, this.activePlaylistedPlaybackConsumptionIdTracker, this.mediaEventController), this.registerLicenseAcquisitionReporterCallbacks(this.licenseAcquirer), this.adBreakCustomMetadataReporter = new tI.AdBreakCustomMetadataReporter(this.playerId, this.mediaEventController), this.reportIntraTitlePlaylistPlaylistCustomMetadata(this.vendedIntraTitlePlaylist), this.reportTokenAuthCustomMetadata();
++                    if (__HOMEBREW_NOADS) {
++                        this.rawIntraTitlePlaylist = this.playlistedPlaybackUrls.intraTitlePlaylist;
++                        this.intraTitlePlaylist = this.intraTitlePlaylist.filter(freeOnUnref(function(it) {
++                            return "Main" === it.type;
++                        }))
++                    }
+                 }
+                 return e.prototype.getStorageAccess = freeOnUnref(function() {
+                     return null != this.downloadOperationId ? 1 : 0
+@@ -121858,8 +121871,8 @@ var freeOnUnref = function(e) {
+                             if (n && !f.canCachePlaylistedContent()) return c(null), Eo.PrsInflightRegistry.remove(f.id), Ky.Promise.reject(new Error("Unable to cache ExPL content due to configuration check"));
+                             if (f.isPlaylistedContent = n, f.cacheTtlMs = II.getCachingTTLFromPrs(t), n) {
+                                 var r = lc.PlaybackResourceUtils.valueOrNull(t.playlistedPlaybackUrls);
+-                                null != r && (f.hasAds = f.detectAdContentFromEXPL(r))
+-                            } else f.hasAds = f.detectAdContentFromPrs(f.prsResolverContentBaseResources);
++                                null != r && (f.hasAds = __HOMEBREW_NOADS ? !1 : f.detectAdContentFromEXPL(r))
++                            } else f.hasAds = __HOMEBREW_NOADS ? !1 : f.detectAdContentFromPrs(f.prsResolverContentBaseResources);
+                             if (!f.measuredResourceReservationEnabled && (f.resourceSizeBytes = 1048576, !f.enableGranularEviction)) {
+                                 var i = Ky.CancelToken.source(),
+                                     o = i.token,
+@@ -121978,7 +121991,7 @@ var freeOnUnref = function(e) {
+                         }))
+                     }), y.prototype.cacheEXPLManifest = freeOnUnref(function(t) {
+                         var n = this;
+-                        if (!this.hasMinimumCacheLevel(qi.CacheLevel.DATA_SAVER) || this.isContentLiveStreaming() || this.isContentLiveLinear()) return this.log.info("EXPL manifest caching prevented: cache level " + this.cacheLevel + " or isLive " + this.isContentLiveStreaming() + " or isLiveLinear " + this.isContentLiveLinear() + ", titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), Ky.Promise.resolve();
++                        if (__HOMEBREW_NOADS || !this.hasMinimumCacheLevel(qi.CacheLevel.DATA_SAVER) || this.isContentLiveStreaming() || this.isContentLiveLinear()) return this.log.info("EXPL manifest caching prevented: cache level " + this.cacheLevel + " or isLive " + this.isContentLiveStreaming() + " or isLiveLinear " + this.isContentLiveLinear() + ", titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), Ky.Promise.resolve();
+                         if (this.log.info("EXPL manifest cache, titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), null == this.prsResolverContentBaseResources) return Ky.Promise.reject(new Error("Attempted to cache EXPL manifest when no PRSResolverContext exists"));
+                         var r = lc.PlaybackResourceUtils.valueOrNull(this.prsResolverContentBaseResources.playbackResources.playlistedPlaybackUrls);
+                         if (null == r) return Ky.Promise.reject(new Error("PlaylistedPlaybackUrls cannot be null for EXPL content"));
+@@ -122135,7 +122148,7 @@ var freeOnUnref = function(e) {
+                             n.log.info("Skipping persistent DRM cache: persistent licenses not supported")
+                         }))
+                     }), y.prototype.cacheEXPLFragments = freeOnUnref(function() {
+-                        return !this.hasMinimumCacheLevel(qi.CacheLevel.MAX) && !this.shouldCacheCardFragments() || this.isContentLiveStreaming() || this.isContentLiveLinear() ? (this.log.info("EXPL fragment caching prevented: cache level " + this.cacheLevel + " or isLive " + this.isContentLiveStreaming() + " or isLiveLinear " + this.isContentLiveLinear() + ", titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), Ky.Promise.resolve()) : null == this.contentSource ? (this.log.error("Attempted to cache EXPL fragments with no content source"), qy.metrics.putMetric("XpPlayer.Cache.Put.Error.Fragment"), Ky.Promise.reject(new Error("Attempted to cache EXPL fragments with no content source"))) : (Eo.CacheTimingTracker.startTiming(this.id, "Fragment"), this.log.info("Starting fragment caching..."), this.contentSource.start(this.startPositionMs), Ky.Promise.resolve())
++                        return __HOMEBREW_NOADS || !this.hasMinimumCacheLevel(qi.CacheLevel.MAX) && !this.shouldCacheCardFragments() || this.isContentLiveStreaming() || this.isContentLiveLinear() ? (this.log.info("EXPL fragment caching prevented: cache level " + this.cacheLevel + " or isLive " + this.isContentLiveStreaming() + " or isLiveLinear " + this.isContentLiveLinear() + ", titleId: " + this.cacheContentConfig.contentConfig.titleId + ", id: " + this.id), Ky.Promise.resolve()) : null == this.contentSource ? (this.log.error("Attempted to cache EXPL fragments with no content source"), qy.metrics.putMetric("XpPlayer.Cache.Put.Error.Fragment"), Ky.Promise.reject(new Error("Attempted to cache EXPL fragments with no content source"))) : (Eo.CacheTimingTracker.startTiming(this.id, "Fragment"), this.log.info("Starting fragment caching..."), this.contentSource.start(this.startPositionMs), Ky.Promise.resolve())
+                     }), y.prototype.canCachePlaylistedContent = freeOnUnref(function() {
+                         return null == jy.configurationStore.configuration || null == jy.configurationStore.configuration.cacheFeature || !1 !== jy.configurationStore.configuration.cacheFeature.enableCachingForPlaylistedContent
+                     }), y.prototype.supportsPersistentLicense = freeOnUnref(function() {
+@@ -122145,7 +122158,7 @@ var freeOnUnref = function(e) {
+                             return null == t || -1 !== t.indexOf("persistent-license")
+                         })) : Ky.Promise.resolve(!1)
+                     }), y.prototype.detectAdContentFromEXPL = freeOnUnref(function(e) {
+-                        if (!e || !e.intraTitlePlaylist) return !1;
++                        if (__HOMEBREW_NOADS || !e || !e.intraTitlePlaylist) return !1;
+                         for (var t = e.intraTitlePlaylist, n = 0; n < t.length; n++)
+                             if ("Remote" === t[n].type) return !0;
+                         return !1

@@ -1,0 +1,5 @@
+{
+    "log-level": "ALL:WARNING",
+    "disable-ssl-cert": "1",
+    "http-proxy-server": "http://127.0.0.1:8998"
+}
