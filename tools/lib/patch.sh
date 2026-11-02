@@ -15,10 +15,18 @@ WEBOS_MAJOR="$(sed -n 's/^VERSION_ID="\{0,1\}\([0-9][0-9]*\).*/\1/p' /etc/os-rel
 
 patch_cert_pin() {
   # webOS 11.x: the app directory is a read-write overlayfs (squashfs lowerdir)
-  # which is only mounted while the target app runs. If the cert dir is not
-  # visible yet, launch the target app once to get the overlay mounted, wait,
-  # then pin. The written CA persists in the overlay upperdir across restarts.
+  # which is only mounted while the target app runs. The pinned CA persists
+  # in the overlay upperdir across app restarts and reboots, so the upperdir
+  # is checked first (no mount needed); if unpinned, the target app is
+  # launched once to get the overlay mounted, then the pin is retried.
+  UPPER_CERT_DIR="/media/data/data/$TARGET_APP_NAME/bin/certs"
+  if [ -f "$UPPER_CERT_DIR/$CERT_NAME" ]; then
+    log "CA already pinned (overlay upperdir)"
+    return 0
+  fi
   if [ ! -d "$TARGET_CERT_DIR" ] && [ ! -d "$TARGET_CERT_DIR_LOVEFILM" ]; then
+    # webOS 11.x at boot: overlay not mounted yet - launch the target app
+    # once to mount it, then retry the pin below.
     log "cert dir not mounted, launching target app to mount overlay..."
     luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$TARGET_APP_NAME\"}" >/dev/null 2>&1
     i=0
@@ -27,7 +35,7 @@ patch_cert_pin() {
       i=$((i+1))
     done
   fi
-  if [ -d  $TARGET_CERT_DIR ]; then
+  if [ -d "$TARGET_CERT_DIR" ]; then
     if [ ! -f "$TARGET_CERT_DIR/$CERT_NAME" ]; then
       cp "$CERT_DIR/$CERT_NAME" "$TARGET_CERT_DIR/$CERT_NAME"
       chmod 755 "$TARGET_CERT_DIR/$CERT_NAME" 2>/dev/null || true
