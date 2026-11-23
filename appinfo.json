@@ -7,5 +7,6 @@
   "title": "AmazOff",
   "icon": "amazoff.png",
   "largeIcon": "amazoffLarge.png",
-  "iconColor": "#000000"
+  "iconColor": "#000000",
+  "requiredPermissions": ["org.webosbrew.hbchannel.service.group"]
 }
